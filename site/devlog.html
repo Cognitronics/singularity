@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Singularity – Devlog</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="Devlog of Singularity, a turn-based multiverse strategy game in 1920s Manhattan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="top"><a class="logo" href="devlog.html"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><polygon points="13,2 23,7.5 23,18.5 13,24 3,18.5 3,7.5" fill="none" stroke="#e8ecf4" stroke-width="1.4"></polygon><circle cx="13" cy="13" r="3" fill="#e8ecf4"></circle><line x1="13" y1="2" x2="13" y2="10" stroke="#e8ecf4" stroke-width="1.2"></line></svg><span><b>Singu</b>larity</span></a><nav class="nav-top" aria-label="Main navigation"><a href="index.html">Game</a><a href="devlog.html">Devlog</a><a href="https://cognitronics.ai">Cognitronics</a><a href="https://github.com/Cognitronics">GitHub</a></nav></div></header>
+<main class="wrap">
+<section class="hero"><div class="eyebrow">singularity.cognitronics.ai</div><h1>One multiverse.<strong>No waiting.</strong></h1>
+<p>The development log of Singularity – a turn-based strategy game in 1920s Manhattan, where every player leads a secret organisation and rules their own parallel universe.</p>
+<img src="screenshot.jpg" alt="Screenshot of the playable prototype: isometric Manhattan with eight districts, facilities, Central Park rift zone, resource bar and district panel"></section>
+<p style="margin:32px 0 0"><a href="play2/index.html" style="display:inline-block;padding:14px 22px;border:1px solid var(--blue);color:var(--text);text-decoration:none;letter-spacing:3px;font-size:13px;text-transform:uppercase">Play the prototype →</a></p>
+<div class="section-label">01 — Devlog</div>
+<ul class="posts">
+<li><div class="num">07</div><div><div class="meta">November 15, 2026</div><a href="posts/07-manhattan.html">Change of course: Manhattan instead of city building</a><p>We no longer build a city – we control one that already exists.</p></div></li>
+<li><div class="num">06</div><div><div class="meta">November 15, 2026</div><a href="posts/06-der-look.html">The look: grey, isometric, Art Deco</a><p>A first impression of what Singularity could look like.</p></div></li>
+<li><div class="num">05</div><div><div class="meta">November 15, 2026</div><a href="posts/05-geheimforschung.html">Secret research: tech from conspiracy myths</a><p>Weather machines, free energy and mind control by radio – as a research branch with a price.</p></div></li>
+<li><div class="num">04</div><div><div class="meta">November 15, 2026</div><a href="posts/04-siegpunkte.html">Ten anchors in the whole cosmos</a><p>Whoever holds more than half keeps their universe stable. All others fall apart.</p></div></li>
+<li><div class="num">03</div><div><div class="meta">November 15, 2026</div><a href="posts/03-zeithandel.html">Trading with the past and the future</a><p>Because universes run at different speeds, a technical problem becomes a game mechanic.</p></div></li>
+<li><div class="num">02</div><div><div class="meta">November 15, 2026</div><a href="posts/02-paralleluniversen.html">Parallel universes, one Manhattan</a><p>Every player rules their own version of the same city. Time runs differently in each.</p></div></li>
+<li><div class="num">01</div><div><div class="meta">November 15, 2026</div><a href="posts/01-die-idee.html">The idea: multiplayer without waiting</a><p>A turn-based strategy game where everyone plays at their own pace – and still shares one world.</p></div></li>
+</ul>
+<div class="section-label">02 — The game in detail</div>
+<section class="detail">
+<h2>What it's about</h2>
+<p>Singularity is a turn-based online strategy game for several players. It is set in 1920s Manhattan, among Art Deco skyscrapers, zeppelins, radio towers and speakeasies. The city already exists – you don't build it, you control it. Every player leads a secret organisation that steers Manhattan from the shadows.</p>
+<p>An experiment with ether crystals has split the world into countless parallel universes. Each player rules one of them. The goal: keep your universe stable while all the others fall into the singularity.</p>
+
+<h2>One Manhattan, many universes</h2>
+<p>All players play in the same Manhattan, but each in their own version of it. The universes are almost identical but differ in the details. Here the Empire State Building carries a mooring mast for zeppelins; there it is an ether tower. One universe has Prohibition, another doesn't. Deposits are slightly shifted. These variations bring small advantages and drawbacks.</p>
+
+<h2>Playing without waiting</h2>
+<p>Turn-based online games share one problem: everyone waits for the slowest player. Singularity solves this with epochs.</p>
+<ul>
+<li><strong>Turns:</strong> Each turn you allocate resources, build facilities and use technology and psy power. Then the simulation advances one step: income, district mood, events.</li>
+<li><strong>Epochs:</strong> Eight turns form an epoch. Within an epoch everyone plays at their own pace – one player finishes all turns in an evening, another plays one a day.</li>
+<li><strong>Sync points:</strong> At the end of an epoch all timelines meet. Only then are trades, deliveries, crossings and anchors resolved.</li>
+<li><strong>Absence:</strong> Anyone who stays away too long is carefully played by an AI steward. Nobody has to wait.</li>
+</ul>
+<p>The story explains it: time runs at a different speed in every universe. Players being at different turns isn't a technical compromise – it's part of the world.</p>
+
+<h2>Steering Manhattan from the shadows</h2>
+<p>You don't build roads or houses. Manhattan is already there, and your organisation runs it in secret.</p>
+<ul>
+<li><strong>Districts:</strong> Financial District, Midtown, Times Square, Greenwich Village, Lower East Side, Hell's Kitchen &amp; Docks, Central Park and Harlem. Each has values for prosperity, loyalty, unrest and control.</li>
+<li><strong>Facilities:</strong> You take over existing buildings and turn them into laboratories, generators, radio towers or crystal drills. That's all you build.</li>
+<li><strong>Resources:</strong> Money from the districts, power from generators, ether crystals, and psy power from labs and radio towers.</li>
+<li><strong>Psy power:</strong> Use it to influence the city – raise loyalty, calm unrest, boost income. In a rival's universe it does the opposite.</li>
+</ul>
+<p>Events such as strikes, Prohibition or a stock market crash stir up the districts. AI factions – the mob, the police, the unions and the press – react to what you do.</p>
+
+<h2>Ether crystals</h2>
+<p>The most important resource. Without them there are no anchors and no contact with other universes.</p>
+<ul>
+<li>Your own universe has only a few deposits.</li>
+<li>Unstable rift zones like Central Park hold many more. Mining them makes you stronger faster – and destabilises your universe.</li>
+<li>Crystals can be traded through portals, even through time.</li>
+</ul>
+
+<h2>Contact with other universes</h2>
+<p>Connections to other players are researched step by step. Each stage brings more options and more risk.</p>
+<ol>
+<li><strong>Glimpse:</strong> A small crystal opens an ether mirror. For a moment, a rival's world flickers over yours: their facilities, their progress, their turn. Ether dampers protect against prying eyes.</li>
+<li><strong>Trade:</strong> Portals connect universes. Goods, blueprints and crystals change hands.</li>
+<li><strong>Crossing:</strong> Agents and expeditions cross over to spy, sabotage or steal anchors – and meet doppelgängers.</li>
+<li><strong>Merging:</strong> Two universes overlap. Buildings in the same spot compete or become hybrids. It can be an alliance or a hostile takeover.</li>
+</ol>
+
+<h2>Trading through time</h2>
+<p>Because players are at different turns, a slower player's universe lies in the past, a faster one's in the future.</p>
+<ul>
+<li><strong>Into the past:</strong> Players who are ahead sell blueprints and goods that are still unknown there.</li>
+<li><strong>Into the future:</strong> Players who are behind deliver raw materials that arrive as a “delivery from the past”.</li>
+<li><strong>Prophecies:</strong> Whoever is ahead knows upcoming events and can sell that knowledge – or spread lies.</li>
+</ul>
+<p>One firm rule prevents paradoxes: nothing sent into the past changes turns the sender has already played.</p>
+
+<h2>Secret research</h2>
+<p>A dedicated research branch brings technologies known from conspiracy myths: Tesla weather towers modelled on HAARP, free energy plants, zeppelin spraying, cloaking fields like the Philadelphia Experiment, chrono labs, propaganda stations, drilling into the hollow Earth and the ruins of Tartaria. They are powerful, but every one of them makes your universe less stable.</p>
+
+<h2>Instability</h2>
+<p>Instability is the price of power. It rises through mining rift zones, portals, crossings and secret research. High instability brings rifts, anomalies, lost cargo and restless citizens. Stabilizers bring it down again but cost space and upkeep. Every decision trades fast growth against safety.</p>
+
+<h2>Anchors and the endgame</h2>
+<p>Across the cosmos there are exactly ten victory points, called anchors – Manhattan's landmarks: Empire State Building, Chrysler Building, Flatiron Building, Brooklyn Bridge, Central Park, Wall Street, Woolworth Building, Grand Central, Times Square and the Statue of Liberty. Whoever holds at least six wins: their universe is stable, all others collapse.</p>
+<ul>
+<li><strong>Fixed anchors:</strong> e.g. the Empire State Building for the first portal. Every landmark must be activated with ether crystals.</li>
+<li><strong>Roaming anchors:</strong> e.g. Wall Street for the highest income. They change hands as soon as someone overtakes.</li>
+<li><strong>Theft:</strong> Crossings and mergers let you steal anchors from other universes.</li>
+</ul>
+<p>Because only ten exist, every anchor you gain is one someone else loses. If nobody reaches six by the last epoch, whoever holds the most wins.</p>
+
+<h2>Fair despite different speeds</h2>
+<ul>
+<li><strong>Game turn beats clock time:</strong> In races like the first portal, whoever built it in the earlier game turn wins – not whoever was faster in real life.</li>
+<li><strong>Ether drift:</strong> The further ahead you play, the fewer crystals you get.</li>
+<li><strong>Catch-up bonus:</strong> Players who are behind get slightly more crystals.</li>
+<li><strong>Checked at sync points:</strong> Anchors are only resolved once everyone has arrived.</li>
+</ul>
+
+<h2>The look</h2>
+<p>Grey, moody and isometric, inspired by X-COM and Command &amp; Conquer from the 90s. The only strong colours belong to the ether: cyan for other universes, violet for rifts, plus warm window light and neon.</p>
+
+<h2>What's next</h2>
+<ol>
+<li>Playable single-player core: Manhattan with eight districts, facilities, resources and psy power – <a href="play2/index.html">already playable</a>.</li>
+<li>Server with saved games and deterministic simulation.</li>
+<li>Epochs and sync points for several players.</li>
+<li>Glimpses, then trade and time portals.</li>
+<li>Crossing, merging, AI steward and endgame.</li>
+</ol>
+</section>
+
+</main>
+<footer><div class="wrap"><span>© 2026 Cognitronics · Vienna</span><span><a href="https://cognitronics.ai">cognitronics.ai</a> · <a href="https://paypal.me/cognitronics">♥ Support</a></span></div></footer>
+</body>
+</html>

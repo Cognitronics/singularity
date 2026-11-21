@@ -1,0 +1,11 @@
+# raw generation material (large) – only the style concepts are kept in docs/
+v2/
+singularity-site.zip
+# superseded PNG copies in V2 (the game loads the .webp versions)
+site/play2/sprites/**/*.png
+site/play2/ui/*.png
+site/play2/art/*.png
+# local test pages and OS files
+site/**/_*.html
+.DS_Store
+__pycache__/

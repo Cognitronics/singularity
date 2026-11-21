@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en" class="m">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Singularity – Prototype</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Oswald:wght@500;700&family=UnifrakturMaguntia&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121416;--panel:#1d2023;--panel2:#25292d;--line:#3d4248;--text:#d8dadc;--muted:#9aa0a6;--amber:#e0a43a;--cyan:#5fd4e0;--violet:#b48ef0;--red:#f06a6a;--green:#7fd68a}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 'IBM Plex Mono',ui-monospace,monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+.top{position:sticky;top:0;z-index:11;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:10px 14px;background:#1a1d20;border-bottom:2px solid var(--line)}
+.title{font-family:Silkscreen,monospace;font-size:18px;letter-spacing:2px;color:var(--amber)}
+.res{display:flex;flex-wrap:wrap;gap:4px 16px}
+.res span b{color:#fff;font-weight:600}
+.res .k b{color:var(--cyan)}.res .p b{color:var(--violet)}
+.date{margin-left:auto;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:calc(100vh - 52px)}
+.mapwrap{position:relative;background:#0b141c;border-right:2px solid var(--line)}
+canvas{display:block;width:100%;height:auto;touch-action:none;image-rendering:pixelated}
+.inst{position:absolute;left:12px;top:12px;padding:8px 12px;background:rgba(18,20,22,.85);border:1px solid var(--line);font-size:12px}
+.bar{width:160px;height:8px;background:#2c3034;margin-top:4px}.bar i{display:block;height:100%;background:var(--violet)}
+.side{display:flex;flex-direction:column;background:var(--panel);min-width:0}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;padding:12px 4px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);letter-spacing:1px;font-size:12px}
+.tabs button.on{color:var(--text);border-bottom-color:var(--amber)}
+.pane{padding:14px;overflow:auto;flex:1}
+h2{font-family:Silkscreen,monospace;font-weight:500;letter-spacing:2px;font-size:18px;margin:0 0 8px;color:#fff}
+h3{font-size:12px;letter-spacing:2px;color:var(--muted);margin:16px 0 8px;font-weight:400;text-transform:uppercase}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.stat{font-size:12px}.stat .bar{width:100%}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.slot{min-height:64px;padding:6px;background:var(--panel2);border:1px solid var(--line);font-size:11px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.slot.off{opacity:.5;border-color:var(--red)}
+.slot small{color:var(--muted)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btn{padding:10px 8px;min-height:44px;background:var(--panel2);border:1px solid var(--line);text-align:left;font-size:12px}
+.btn small{display:block;color:var(--muted);font-size:11px}
+.btn:hover:not(:disabled){border-color:var(--amber)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.small{min-height:36px;padding:6px 8px;text-align:center}
+.end{margin:12px 14px 14px;padding:14px;background:var(--amber);color:#141618;border:0;border-bottom:4px solid #6b4a1a;font-family:Silkscreen,monospace;font-size:18px;letter-spacing:2px}
+.note{color:var(--muted);font-size:12px}
+.anchor{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.anchor b{color:#fff}.anchor.ok b{color:var(--amber)}.anchor.active b{color:var(--cyan)}
+.anchor .c{grid-column:1;color:var(--muted)}
+.log p{margin:0 0 8px;font-size:12px}.log p b{color:var(--amber)}
+.tree{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.br{background:var(--panel2);border:1px solid var(--line);padding:8px;font-size:11px}
+.br.sel{border-color:var(--amber)}
+.br ol{padding-left:16px;margin:6px 0}.br li.done{color:var(--green)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.modal.on{display:flex}
+.pstack{position:relative;max-width:540px;width:100%;filter:drop-shadow(8px 8px 0 rgba(0,0,0,.45))}
+.pstack::before,.pstack::after{content:"";position:absolute;inset:0;background:#d8d0bc;z-index:-1;clip-path:var(--px)}
+.pstack::before{transform:rotate(-4deg) translate(-6px,8px)}.pstack::after{transform:rotate(2.5deg) translate(8px,4px);background:#cfc6b0}
+.paper{--px:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px));
+ width:100%;max-height:85vh;overflow:auto;background:#e9e3d3;color:#1d1b17;padding:22px 24px;font-family:'IBM Plex Mono',monospace;clip-path:var(--px)}
+.pstack{--px:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px))}
+.paper .photo{display:block;width:100%;height:auto;margin:4px 0 12px;border:2px solid #1d1b17}
+.paper .cols{column-count:2;column-gap:20px;column-rule:2px solid #1d1b17}
+.paper .art{break-inside:avoid;margin-bottom:12px}
+.paper .fill{display:block;height:14px;margin-top:6px;background:repeating-linear-gradient(#bdb6a6 0 2px,transparent 2px 6px)}
+.paper .fill.s{width:60%}
+@media(max-width:520px){.paper .cols{column-count:1}}
+.paper .mast{font-family:UnifrakturMaguntia,serif;font-size:46px;line-height:1;text-align:center;border-top:3px double #1d1b17;border-bottom:3px double #1d1b17;padding:8px 0 6px;margin:0 0 6px}
+.paper .mast small{display:block;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:6px;text-transform:uppercase;margin-bottom:2px}
+.paper h1{font-family:Oswald,sans-serif;font-weight:700;letter-spacing:.5px;text-align:left;margin:10px 0 6px;font-size:34px;line-height:1.05;text-transform:uppercase}
+.paper .dl{text-align:center;font-size:12px;border-bottom:1px solid #1d1b17;padding-bottom:6px;margin-bottom:12px;font-family:'IBM Plex Mono',monospace}
+.paper h4{margin:0 0 4px;font-family:Oswald,sans-serif;font-weight:500;font-size:17px;line-height:1.2}.paper p{margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.45}
+.paper button{display:block;margin:16px auto 0;padding:10px 24px;background:#1d1b17;color:#e9e3d3;border:0;font-family:'IBM Plex Mono',monospace}
+/* Red-Alert-style command sidebar */
+:root{--ra:#b3221c;--ra-d:#5a110e;--steel1:#3a3c40;--steel2:#1c1d20}
+.top{background:linear-gradient(#2a2b2e,#141518);border-bottom:2px solid var(--ra)}
+.side{background:linear-gradient(90deg,#202124,#2c2d31 40%,#1a1b1e);border-left:3px solid #0a0a0b;box-shadow:inset 2px 0 0 #4a4c52}
+.tabs{border-bottom:2px solid var(--ra);background:linear-gradient(#34363a,#1d1e21)}
+.tabs button{border:1px solid;border-color:#55585e #0c0c0d #0c0c0d #55585e;border-bottom:0;margin:4px 2px 0;background:linear-gradient(#3e4045,#26272b)}
+.tabs button.on{color:#fff;background:linear-gradient(#7a1a16,#3e0c0a);border-bottom-color:transparent}
+.btn{background:linear-gradient(#34363a,#222327);border:2px solid;border-color:#5a5d63 #0c0c0d #0c0c0d #5a5d63;border-radius:0}
+.btn:hover:not(:disabled){border-color:#d0463c #3a0806 #3a0806 #d0463c}
+.slot{background:#121315;border:2px solid;border-color:#0c0c0d #4a4c52 #4a4c52 #0c0c0d}
+.end{background:linear-gradient(#c22a22,#7a1410);color:#fff;border:2px solid;border-color:#e06058 #3a0806 #3a0806 #e06058;text-shadow:1px 1px 0 #000}
+h3{color:#d0463c}
+.inst{background:rgba(10,10,12,.85);border:2px solid;border-color:#4a4c52 #0c0c0d #0c0c0d #4a4c52}
+.res span b{font-family:Silkscreen,monospace}
+.zoom{position:absolute;right:12px;bottom:12px;z-index:3;display:flex;flex-direction:column;gap:6px}.zoom button{width:44px;height:44px;font:700 20px Silkscreen,monospace;color:#e8eaec;background:linear-gradient(#3e4045,#26272b);border:2px solid;border-color:#5a5d63 #0c0c0d #0c0c0d #5a5d63}
+canvas{cursor:grab}canvas:active{cursor:grabbing}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.mapwrap{border-right:0;border-bottom:2px solid var(--line)}.inst{position:sticky;left:8px;bottom:auto;top:0;display:inline-block;margin:8px;font-size:11px}.inst .bar{width:110px}.date{margin-left:0}.end{position:sticky;bottom:0;margin:0;border-radius:0}}
+.info{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin-left:5px;border:1px solid #6a7078;border-radius:50%;font:bold 9px/1 Georgia,serif;font-style:italic;color:#9aa0a8;cursor:help;vertical-align:1px}.info:hover{border-color:#e0a43a;color:#e0a43a}
+#tip{position:fixed;z-index:50;max-width:280px;padding:9px 11px;background:#101214;border:1px solid #e0a43a;color:#d8dadc;font-size:12px;line-height:1.45;pointer-events:none;display:none;box-shadow:0 6px 20px #000a}
+.helpbtn{display:flex;align-items:center;gap:7px;margin-top:9px;padding:5px 9px 5px 7px;background:#25292d;border:1px solid #4a4c52;color:#e0a43a;font:12px Silkscreen,monospace;letter-spacing:1px;cursor:pointer}.helpbtn:hover{border-color:#e0a43a;background:#2c3034}
+.manual{position:relative;max-width:720px;width:100%;max-height:88vh;overflow:auto;background:#16181b;border:1px solid #e0a43a;color:#d8dadc;padding:28px 32px;font-size:13.5px;line-height:1.6;box-shadow:0 10px 50px #000c}
+.manual h1{font-family:Silkscreen,monospace;color:#e0a43a;letter-spacing:3px;font-size:24px;margin:0}.manual .lead{color:#9aa0a6;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin:4px 0 18px;border-bottom:1px solid #3d4248;padding-bottom:14px}
+.manual h2{font-family:Silkscreen,monospace;color:#f06a6a;font-size:13px;letter-spacing:2px;margin:24px 0 8px;font-weight:normal}.manual b{color:#fff}
+.manual table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12.5px}.manual td,.manual th{padding:6px 8px;border-bottom:1px solid #2c3034;vertical-align:top;text-align:left}.manual th{color:#9aa0a6;font-weight:normal;font-size:11px;letter-spacing:1px;text-transform:uppercase}.manual td:first-child{color:#e0a43a;white-space:nowrap;width:1%}
+.manual ul,.manual ol{padding-left:20px;margin:6px 0}.manual li{margin:3px 0}.formula{background:#0f1113;border-left:3px solid #5fd4e0;padding:8px 12px;font-size:12px;color:#5fd4e0}
+.mclose{position:sticky;float:right;top:0;margin:-12px -16px 0 0;width:34px;height:34px;background:#25292d;border:1px solid #4a4c52;color:#d8dadc;font-size:15px;cursor:pointer}.mclose:hover{border-color:#e0a43a;color:#e0a43a}
+.yield{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;padding:10px 12px;margin:8px 0 4px;background:#16181b;border:1px solid #3d4248;font-size:12px}.yield span{display:flex;justify-content:space-between}.yield span em{font-style:normal;color:#9aa0a6}.yield .pos{color:#7fd68a}.yield .neg{color:#f06a6a}.yield .tot{grid-column:1/-1;border-top:1px solid #3d4248;padding-top:5px;margin-top:2px}
+.advisor{display:flex;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid #3d4248;width:270px}.advisor canvas{width:60px;height:84px;image-rendering:pixelated;background:linear-gradient(#24302c,#141a18);border:1px solid #4a4c52;flex:none}.advisor>div>b{display:block;font:11px Silkscreen,monospace;color:#e0a43a;letter-spacing:1px}.advisor small{display:block;color:#9aa0a6;font-size:10px;margin-bottom:5px}#advtxt p{margin:0 0 6px;font-size:11.5px;line-height:1.4;color:#d8dadc}#advtxt p i{color:#9aa0a6}#advtxt p b{color:#e0a43a;font-weight:600}#advtxt p:before{content:'› ';color:#e0a43a}
+@media(max-width:860px){.advisor{width:auto;max-width:300px}}
+.snd{display:flex;align-items:center;gap:8px}.snd button{min-width:30px;padding:0 5px;font-family:Silkscreen,monospace;height:26px;background:#25292d;border:1px solid #4a4c52;color:#e0a43a;font-size:15px;cursor:pointer;line-height:1}.snd button.off{color:#5c6168;text-decoration:line-through}.snd input{width:90px;accent-color:#e0a43a}
+.mapwrap .end{position:absolute;top:12px;left:50%;transform:translateX(-50%);margin:0;padding:12px 34px;z-index:4;font-size:17px;box-shadow:0 6px 20px rgba(0,0,0,.6);cursor:pointer}.mapwrap .end:hover:not(:disabled){filter:brightness(1.15)}
+@media(max-width:860px){.mapwrap .end{position:absolute;top:auto;bottom:12px;padding:10px 24px;font-size:15px}}
+.gamebtns{margin-left:auto;display:flex;gap:8px}.gamebtns button{padding:6px 12px;background:#25292d;border:1px solid #4a4c52;color:#d8dadc;font:12px Silkscreen,monospace;letter-spacing:1px;cursor:pointer}.gamebtns button:hover{border-color:#e0a43a;color:#e0a43a}#quitgame:hover{border-color:#f06a6a;color:#f06a6a}
+.turnbar{position:absolute;top:12px;left:0;right:0;display:flex;justify-content:center;align-items:flex-start;z-index:4;white-space:nowrap;pointer-events:none}
+.turnbar>*{pointer-events:auto}
+.mapwrap .turnbar .end{position:absolute;top:0;right:12px;left:auto;transform:none}
+.mapwrap .turnbar .helpbtn{position:absolute;top:80px;right:12px;margin:0}
+.turnbar .date{white-space:normal;text-align:center;margin:0;padding:9px 14px;background:rgba(14,16,18,.85);border:1px solid #3d4248;color:#d8dadc;font-size:12px;letter-spacing:1px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+@media(max-width:860px){.turnbar{top:auto;bottom:12px;flex-direction:column-reverse;gap:6px}.turnbar .date{font-size:10px;padding:5px 9px}}
+
+/* PixelLab UI kit (ui/*.png): art-deco steel + brass frames as 9-slice, drawn at half size = native pixels on retina */
+.gamebtns button,.helpbtn,.btn,.snd button,.zoom button,.mclose{border-style:solid;border-width:10px;border-image:url(ui/btn.png) 20 fill/10px stretch;background:none;image-rendering:pixelated;color:#f2dfb4;text-shadow:1px 1px 0 #000;border-radius:0}
+.gamebtns button:hover,.helpbtn:hover,.btn:hover:not(:disabled),.snd button:hover,.zoom button:hover,.mclose:hover{border-image-source:url(ui/btn_hover.png);background:none}
+.gamebtns button:active,.helpbtn:active,.btn:active:not(:disabled),.snd button:active,.zoom button:active,.mclose:active{border-image-source:url(ui/btn_pressed.png)}
+.snd button.on,.btn.on{border-image-source:url(ui/btn_active.png)}
+.gamebtns button{padding:1px 8px}.helpbtn{padding:1px 6px 1px 4px}.btn{padding:2px 4px}.snd button{height:34px;padding:0 4px}.mclose{width:40px;height:40px}
+.end,.mapwrap .end{border-style:solid;border-width:11px 12px;border-image:url(ui/end.png) 22 24 fill/11px 12px stretch;background:none;image-rendering:pixelated;box-shadow:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.end:hover:not(:disabled){border-image-source:url(ui/end_hover.png)}.end:active:not(:disabled){border-image-source:url(ui/end_pressed.png)}
+.tabs button{border-style:solid;border-width:7px 8px 2px;border-image:url(ui/tab.png) 14 16 4 fill/7px 8px 2px stretch;background:none;margin:4px 1px 0;image-rendering:pixelated}
+.tabs button{padding:10px 0;min-width:0;letter-spacing:0;font-size:11px}
+.tabs button:hover{border-image-source:url(ui/tab_hover.png)}.tabs button.on{border-image-source:url(ui/tab_active.png);color:#fff}
+
+/* district header art (art/<district>.png, PixelLab 384x192): picture behind the district name, fading into the panel */
+.dhero{position:relative;margin:12px -14px 8px;height:170px;display:flex;align-items:flex-end;padding:0 14px 10px;
+ background:linear-gradient(to bottom,rgba(28,29,32,0) 45%,rgba(28,29,32,.85) 85%,#26272b 100%),var(--img) center 30%/cover no-repeat;image-rendering:pixelated;border-top:2px solid #0c0c0d;border-bottom:1px solid #3d4248}
+.dhero h2{margin:0;color:#fff;text-shadow:2px 2px 0 #000,0 0 12px #000}
+
+.dslot{image-rendering:pixelated;text-shadow:1px 1px 0 #000,0 0 6px #000}.dslot small{color:#e8eaec}
+.dslot:hover{outline:1px solid #e0a43a;outline-offset:-3px}
+
+/* instability box: Brooklyn Bridge behind the bar (art/inst_ok|warn|crit.png); it vibrates as instability rises */
+.inst{--ibg:url(art/inst_ok.png);background:linear-gradient(to bottom,rgba(10,10,12,.2),rgba(10,10,12,.45) 40px,rgba(10,10,12,.95) 72px,rgba(10,10,12,.95)),var(--ibg) 0 0/100% auto no-repeat,#0a0a0c;image-rendering:pixelated}
+.inst .bar{margin-bottom:34px}
+.inst[data-lvl=warn]{--ibg:url(art/inst_warn.png)}
+.inst[data-lvl=crit]{--ibg:url(art/inst_crit.png);box-shadow:0 0 18px rgba(180,142,240,.55)}
+
+/* stat bars: PixelLab brass gauge frame (ui/bar.png, 9-slice at half size) + segmented pixel fill */
+.bar{box-sizing:border-box;height:20px;border-style:solid;border-width:6px 16px;border-image:url(ui/bar.png) 12 32 fill/6px 16px stretch;background:none;image-rendering:pixelated;margin-top:4px}
+.bar i{position:relative;height:100%}
+.bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.38) 0 2px,transparent 2px 6px,rgba(0,0,0,.28) 6px),repeating-linear-gradient(90deg,transparent 0 5px,rgba(0,0,0,.5) 5px 6px)}
+.inst .bar{width:150px}
+
+/* Manhattan stat bars on the map, under the date/weather line */
+.tcenter{position:absolute;top:0;left:326px;right:236px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}.tcenter>*{pointer-events:auto}
+.mstats{display:grid;grid-template-columns:repeat(2,128px);gap:2px 14px;padding:7px 12px 8px;background:rgba(14,16,18,.85);border:1px solid #3d4248;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.mstats .stat{font-size:11px;color:#d8dadc;white-space:nowrap}
+@media(max-width:860px){.tcenter{position:static}}
+
+/* resource plaques in the top bar: PixelLab icons (ui/ico_*.png) on brass-trimmed steel */
+.res{gap:6px 8px;align-items:center}
+.rp{display:inline-flex;align-items:center;gap:6px;padding:1px 8px 1px 3px;background:linear-gradient(#26282c,#141518);border:1px solid #8a6a30;box-shadow:inset 0 0 0 1px #0c0c0d,inset 0 2px 0 #3a3c40,0 2px 0 #000}
+.rp img{width:32px;height:32px;image-rendering:pixelated;display:block}
+.rp>span{display:flex;flex-direction:column;line-height:1.05}
+.rp b{font-family:Silkscreen,monospace;font-size:15px;font-weight:400;color:#fff}
+.rp small{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#9aa0a6}
+.rp.m b{color:#ffd27a}.rp.w b{color:#f0e6c8}.rp.k b{color:#5fd4e0}.rp.p b{color:#c0a0f0}.rp.a b{color:#e0a43a}
+
+/* collapsible advisor tips */
+.advisor{position:relative}
+.advtog{position:absolute;top:8px;right:0;width:26px;height:24px;padding:4px 0 0;background:#25292d;border:1px solid #4a4c52;color:#e0a43a;font:700 18px/1 Silkscreen,monospace;cursor:pointer;transition:transform .15s}
+.advtog:hover{border-color:#e0a43a}
+.advisor.collapsed .advtog{transform:rotate(180deg)}
+.advisor.collapsed #advtxt{display:none}
+.advisor.collapsed canvas{width:30px!important;height:42px!important}
+
+/* ---- cinematic look (step 1): teal colour grade, vignette and ground fog over the map only ---- */
+#map{filter:saturate(.72) contrast(1.08) brightness(.95)}
+.mapwrap::before,.mapwrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2}
+.mapwrap::before{background:#2a8a8c;mix-blend-mode:color;opacity:.32}
+.mapwrap::after{background:radial-gradient(ellipse 75% 70% at 50% 45%,rgba(0,0,0,0) 55%,rgba(2,8,10,.6) 100%),linear-gradient(to top,rgba(70,110,115,.22),rgba(70,110,115,0) 35%)}
+.inst,.turnbar,.zoom{z-index:4}
+/* ---- step 2: steel End Turn, slimmer darker frames ---- */
+.end,.mapwrap .end{border-image-source:url(ui/btn.png);border-width:10px;border-image-slice:20 fill;border-image-width:10px;color:#efe3c4;font-size:19px;letter-spacing:3px;padding:6px 26px;text-shadow:1px 1px 0 #000}
+.end:hover:not(:disabled){border-image-source:url(ui/btn_hover.png)}.end:active:not(:disabled){border-image-source:url(ui/btn_pressed.png)}
+.inst,.turnbar .date,.mstats{border:1px solid #3f4a4c;box-shadow:inset 0 0 0 1px #0a0d0e,0 8px 24px rgba(0,0,0,.55);background-color:rgba(10,14,15,.86)}
+.turnbar .date{color:#cfd8d6;letter-spacing:2px}
+.mstats .stat{color:#cfd8d6}
+.side{border-left:1px solid #2c3436;box-shadow:none;background:linear-gradient(90deg,#15191a,#1c2122 40%,#131617)}
+
+/* in-game quit dialog */
+.qbox{position:relative;width:100%;max-width:420px;padding:26px 28px 24px;background:#121618;border:1px solid #3f4a4c;box-shadow:inset 0 0 0 1px #0a0d0e,0 0 0 1px #8a6a30,0 20px 60px #000c;text-align:center;color:#cfd8d6}
+.qbox h2{font-family:Silkscreen,monospace;color:#e0a43a;letter-spacing:3px;font-size:22px;margin:4px 0 10px}
+.qbox p{margin:0 0 20px;font-size:13px;color:#9aa6a4}
+.qbtns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qbtns .btn{text-align:center;font:15px Silkscreen,monospace;letter-spacing:2px;min-height:52px}
+.qbox .mclose{position:absolute;top:8px;right:8px;margin:0;float:none}
+
+/* sticky HUD layer over the map: its absolutely positioned children stay just below the top bar while the page scrolls */
+.hud{position:sticky;top:var(--toph,60px);height:0;z-index:5}
+@media(max-width:860px){.hud{position:static;height:auto}}
+
+/* anchor cards with landmark art */
+.acard{position:relative;min-height:104px;margin:8px 0;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-end;gap:3px;background:linear-gradient(to top,rgba(8,11,12,.94),rgba(8,11,12,.6) 50%,rgba(8,11,12,.08)),var(--img) center/cover no-repeat;image-rendering:pixelated;border:1px solid #3f4a4c;box-shadow:inset 0 0 0 1px #0a0d0e}
+.acard b{font-family:Silkscreen,monospace;font-weight:400;font-size:14px;color:#fff;text-shadow:1px 1px 0 #000,0 0 8px #000}
+.acard .c{font-size:11px;color:#cfd8d6;text-shadow:1px 1px 0 #000}
+.acard.unknown{filter:saturate(.75) brightness(.85)}.acard.unknown b{color:#b9b0d6}
+.acard.ok{border-color:#e0a43a}
+.acard.active{border-color:#5fd4e0;box-shadow:inset 0 0 0 1px #5fd4e0,0 0 14px rgba(95,212,224,.45)}
+.acard .aact{position:absolute;top:8px;right:8px}
+.abadge{display:inline-block;padding:3px 8px;font:12px Silkscreen,monospace;letter-spacing:1px;color:#0c1416;background:#5fd4e0;box-shadow:0 0 10px rgba(95,212,224,.7)}
+
+/* scientist agent cards (art-deco trading card) */
+.scards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 14px}
+.scard{position:relative;aspect-ratio:5/7;display:flex;flex-direction:column;gap:4px;padding:6px;background:linear-gradient(160deg,#2a2d31,#141618);border:2px solid #8a6a30;box-shadow:inset 0 0 0 1px #0a0d0e,inset 0 0 0 3px #3a2e18,0 4px 12px rgba(0,0,0,.5)}
+.sname{font:11px Silkscreen,monospace;letter-spacing:.5px;color:#f2dfb4;background:linear-gradient(#5a4520,#3a2c12);border:1px solid #c89a48;padding:3px 5px;text-shadow:1px 1px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sart{flex:1;min-height:0;overflow:hidden;background:#141018;border:1px solid #c89a48}
+.sart img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;image-rendering:pixelated;display:block}
+.stype{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#cfd8d6;background:#0f1214;border:1px solid #3f4a4c;padding:2px 5px}
+.stext{font:italic 10px/1.3 Georgia,serif;color:#1d1b17;background:#d8d0bc;border:1px solid #8a6a30;padding:4px 5px;min-height:3.6em}
+.sstats{display:flex;justify-content:space-between;gap:4px}
+.sstats span{display:inline-flex;align-items:center;gap:3px;font:10px Silkscreen,monospace;color:#f2dfb4;background:#0f1214;border:1px solid #8a6a30;padding:1px 5px 1px 2px}
+.sstats img{width:16px;height:16px;image-rendering:pixelated}
+.scard.back{background:repeating-linear-gradient(45deg,#1a1d20 0 6px,#16181b 6px 12px);justify-content:center}
+.sback{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px solid #8a6a30;margin:6px;background:radial-gradient(circle,#1d2326,#0f1214 75%)}
+.sback img{width:70%;height:auto;image-rendering:pixelated;opacity:.85}
+.sback b{font:12px Silkscreen,monospace;letter-spacing:2px;color:#c84a3a;border:1px solid #c84a3a;padding:2px 6px;transform:rotate(-8deg)}
+.sback small{font-size:9px;letter-spacing:1px;color:#6f7a7c;text-transform:uppercase}
+
+/* right panel scrolls on its own: sticky, viewport-high, internal scrolling (desktop only) */
+@media(min-width:861px){
+ .side{position:sticky;top:var(--toph,60px);align-self:start;height:calc(100vh - var(--toph,60px));overflow:hidden}
+ .side .pane{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+}
+
+/* ===== mobile version (html.m, served as play/mobile.html) ===== */
+html.m .layout{grid-template-columns:1fr;min-height:0}
+html.m .top{gap:6px 8px;padding:8px 8px 6px}
+html.m .res{order:5;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%}
+html.m .rp{flex-direction:column;justify-content:center;gap:1px;padding:3px 2px;text-align:center}
+html.m .rp img{width:24px;height:24px}html.m .rp small,html.m .rp .info{display:none}
+html.m .rp b{font-size:11px}html.m .rp>span{align-items:center}
+html.m .gamebtns{margin-left:auto;gap:4px}html.m .gamebtns button{font-size:9px;padding:0 4px;letter-spacing:0}
+html.m .snd input{display:none}html.m .snd{gap:4px}
+html.m .mapwrap{min-height:0;border:0}
+html.m .hud{position:static;height:auto;display:flex;flex-direction:column;gap:8px;padding:8px}
+html.m .inst{position:static;width:auto;margin:0}html.m .inst .bar{width:100%}
+html.m .advisor{width:auto;max-width:none}
+html.m .tcenter{position:static;align-items:stretch;gap:6px}
+html.m .turnbar .date{font-size:10px;padding:6px 8px;letter-spacing:1px}
+html.m .mstats{grid-template-columns:1fr 1fr;width:auto}
+html.m .turnbar{position:fixed;left:0;right:0;bottom:0;top:auto;display:flex;flex-direction:row;align-items:center;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(10,14,15,.96);border-top:1px solid #3f4a4c;z-index:20;pointer-events:auto}
+html.m .mapwrap .turnbar .end{position:static;flex:1;font-size:16px;padding:4px 10px;margin:0}
+html.m .mapwrap .turnbar .helpbtn{position:static}
+html.m body{padding-bottom:76px}
+html.m .side{position:static;height:auto;overflow:visible}html.m .side .pane{overflow:visible}
+html.m .tabs button{font-size:10px}
+html.m,html.m body{overflow-x:hidden;max-width:100vw}
+html.m .layout{grid-template-columns:minmax(0,1fr)}
+html.m .res{grid-template-columns:repeat(5,minmax(0,1fr))}html.m .rp{min-width:0;overflow:hidden}html.m .rp b{white-space:nowrap}
+html.m .mstats{grid-template-columns:repeat(2,minmax(0,1fr))}html.m .mstats .stat{min-width:0}
+html.m .top>*{min-width:0}html.m .hud>*{max-width:100%;box-sizing:border-box}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="title"><img src="logo-mark.svg" alt="" width="44" height="20" style="vertical-align:-3px;margin-right:8px;image-rendering:pixelated">SINGULARITY</div>
+  <div class="res" id="res"></div>
+  <div class="gamebtns"><button id="newgame">NEW GAME</button><button id="quitgame">QUIT GAME</button></div>
+  <div class="snd"><button id="mus" title="Music on/off" aria-label="Music on/off">♪</button><input id="vol" type="range" min="0" max="100" aria-label="Volume"><button id="fxq" title="Graphics effects: high / low" aria-label="Graphics effects">FX</button></div>
+</div>
+<div class="layout">
+  <div class="mapwrap">
+    <div class="inst"><div>INSTABILITY <b id="instv"></b></div><div class="bar"><i id="instb"></i></div><div class="advisor" id="advisor"><canvas id="advpic" width="20" height="28"></canvas><div><b>DR. ELIAS CRANE</b><small>Chief scientist</small><div id="advtxt"></div></div><button class="advtog" id="advtog" aria-label="Hide or show the tips" aria-expanded="true" title="Hide tips">^</button></div></div>
+    <div class="turnbar"><button class="end" id="end">END TURN</button><button class="helpbtn" id="help"><svg width="16" height="13" viewBox="0 0 16 13" shape-rendering="crispEdges"><path fill="#e0a43a" d="M1 1h5l2 1 2-1h5v10h-5l-2 1-2-1H1z"/><path fill="#1a1d20" d="M2 2h4l1 1v7l-1-1H2zM14 2h-4l-1 1v7l1-1h4z"/><path fill="#e0a43a" d="M3 4h3v1H3zM3 6h3v1H3zM10 4h3v1h-3zM10 6h3v1h-3z"/></svg>HELP</button><div class="tcenter"><div class="date" id="date"></div><div class="mstats" id="mstats"></div></div></div>
+    <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zhome" aria-label="Show whole map">⌂</button></div>
+    <canvas id="map" width="2280" height="1800" aria-label="Isometric map of Manhattan. Tap a district to select it." role="img"></canvas>
+  </div>
+  <div class="side">
+    <div class="tabs" role="tablist">
+      <button class="on" data-t="bezirk">DISTRICT</button>
+      <button data-t="psy">PSY</button>
+      <button data-t="forschung">RESEARCH</button>
+      <button data-t="anker">ANCHORS</button>
+      <button data-t="zeitung">NEWS</button>
+    </div>
+    <div class="pane" id="pane"></div>
+  </div>
+</div>
+<div class="modal" id="manual"><div class="manual"><button class="mclose" id="mclose" aria-label="Close manual">✕</button>
+<h1>BUREAU MANUAL</h1>
+<p class="lead">Classified · Division S of the Bureau of Investigation · For authorised agents only</p>
+
+<h2>1 · The situation</h2>
+<p>It is 1920. Manhattan exists not once but in countless parallel universes, and they are drifting into each other. Sooner or later only one version will survive the <b>Singularity</b>. You lead a secret government division nobody knows exists. Your task: make sure <i>your</i> Manhattan is the one that remains.</p>
+<p>A universe holds together through <b>anchors</b> – ten landmarks of the city that stabilise reality. Whoever holds enough of them keeps their universe stable; all others collapse into the ether.</p>
+
+<h2>2 · How to win</h2>
+<ul>
+<li>Have <b>6 of the 10 anchors</b> active at the end of an epoch.</li>
+<li>The game runs for <b>48 turns</b>, divided into <b>6 epochs</b> of 8 turns each.</li>
+<li>You lose if <b>instability reaches 100 %</b> or time runs out with fewer than 6 anchors.</li>
+</ul>
+
+<h2>3 · A turn</h2>
+<ol>
+<li>Click a district on the map. It lights up, the others turn grey. The panel on the right shows what the district earns and what you can build there. Click the water to see all of Manhattan again.</li>
+<li>Build facilities, use psy actions, choose a research goal and activate anchors whose condition you meet.</li>
+<li>Press <b>End turn</b>. Income, resources and events are calculated and reported in the newspaper.</li>
+</ol>
+
+<h2>4 · Resources</h2>
+<table>
+<tr><td>$ Money</td><td>Income from all districts every turn, plus $1,000 from the federal black budget. Pays for facilities and their upkeep. If it drops below zero, loyalty suffers.</td></tr>
+<tr><td>Power (MW)</td><td>Generators produce it, most facilities consume it. If there is not enough, some facilities shut down.</td></tr>
+<tr><td>◆ Crystals</td><td>Ether crystals from drills. Needed for advanced facilities and to activate anchors.</td></tr>
+<tr><td>Psy</td><td>Mental energy from laboratories and radio towers. Spent on psy actions.</td></tr>
+<tr><td>Research</td><td>Points from laboratories. Unlock technologies or locate hidden anchors.</td></tr>
+</table>
+
+<h2>5 · The city</h2>
+<p>Four values describe the mood of all of Manhattan. They are the same for every district.</p>
+<table>
+<tr><td>Prosperity</td><td>How wealthy the city is. Multiplies your income. Drifts back towards 55 %.</td></tr>
+<tr><td>Loyalty</td><td>How much people trust the authorities. Above 50 % your control grows, below it erodes. Falls when the press gets curious or wages go unpaid.</td></tr>
+<tr><td>Unrest</td><td>How restless people are. Lowers income and rises with every facility. Above 60 % unions strike in the Lower East Side, above 70 % the police may raid a facility.</td></tr>
+<tr><td>Control</td><td>How firmly the bureau holds the city. Multiplies income, is required for some anchors, grows with every district that has a facility.</td></tr>
+</table>
+<p class="formula">Income of a district = base × Prosperity × Control × (1 − Unrest ÷ 2)<br>Districts without a facility pay only 30 %.</p>
+
+<h2>6 · Districts</h2>
+<p>Every district has three building plots and a special trait:</p>
+<table>
+<tr><td>Financial District</td><td>Highest income, booms and crashes with the stock market.</td></tr>
+<tr><td>Lower East Side</td><td>Facilities 30 % cheaper, but unions strike when unrest is high.</td></tr>
+<tr><td>Greenwich Village</td><td>Laboratories produce +1 research.</td></tr>
+<tr><td>Hell's Kitchen &amp; Docks</td><td>The mob takes $300 protection money per facility.</td></tr>
+<tr><td>Times Square</td><td>A facility here makes all psy actions 50 % stronger; radio towers +2 psy.</td></tr>
+<tr><td>Midtown</td><td>Skyscrapers: facilities need 20 % more power.</td></tr>
+<tr><td>Central Park</td><td>The rift: drills yield 2 crystals but raise instability.</td></tr>
+<tr><td>Harlem</td><td>Jazz and radio: radio towers +2 psy.</td></tr>
+</table>
+
+<h2>7 · Facilities</h2>
+<p>Facilities take several turns to build. While under construction they produce nothing and cost no upkeep.</p>
+<table>
+<tr><th>Facility</th><th>Turns</th><th>Effect</th></tr>
+<tr><td>Coal Generator</td><td>1</td><td>+30 MW power</td></tr>
+<tr><td>Laboratory</td><td>2</td><td>+5 psy, +1 research</td></tr>
+<tr><td>Radio Tower</td><td>2</td><td>+3 psy, raises control</td></tr>
+<tr><td>Crystal Drill</td><td>2</td><td>+1 crystal (Central Park +2)</td></tr>
+<tr><td>Stabilizer</td><td>3</td><td>−2 % instability · needs Ether 1</td></tr>
+<tr><td>Tesla Generator</td><td>3</td><td>+60 MW, +1 % instability · needs Industry 2</td></tr>
+<tr><td>Portal</td><td>4</td><td>Buy crystals from a neighbouring universe · needs Ether 2</td></tr>
+</table>
+
+<h2>8 · Research</h2>
+<p>Pick a branch in the Research tab; your laboratories work on it automatically. Levels cost 8, 16 and 28 points.</p>
+<table>
+<tr><td>Industry</td><td>+20 % power · Tesla Generator · −30 % upkeep</td></tr>
+<tr><td>Psy</td><td>Inspire · Spending Spree · Forget</td></tr>
+<tr><td>Ether</td><td>Stabilizer · Portal · +1 crystal per drill</td></tr>
+</table>
+<p>Instead of a branch you can choose <b>anchor search</b>: your ether cartographers then use research points to locate a hidden anchor.</p>
+
+<h2>9 · Anchors</h2>
+<p>At the start you know none of the ten anchors. You find them through anchor search or when a famous scientist joins the bureau – up to three times per game someone like Nikola Tesla or Marie Curie offers to work for you in secret and brings knowledge of one anchor.</p>
+<p>A found anchor shows its <b>condition</b>. Once you meet it, you can activate the anchor with crystals.</p>
+<ul>
+<li><b>Fixed anchors</b> stay yours once activated.</li>
+<li><b>Roaming anchors</b> are checked at the end of every epoch. If their condition is no longer met, you lose them.</li>
+</ul>
+
+<h2>10 · Psy actions</h2>
+<p>Psy actions affect all of Manhattan. Each one draws a little press attention and adds 0.5 % instability.</p>
+<table>
+<tr><td>Calm</td><td>5 psy · −6 unrest</td></tr>
+<tr><td>Inspire</td><td>8 psy · +6 loyalty</td></tr>
+<tr><td>Whisper</td><td>10 psy · +4 control</td></tr>
+<tr><td>Spending Spree</td><td>12 psy · +20 % income for 2 turns, then unrest rises</td></tr>
+<tr><td>Forget</td><td>15 psy · press attention −30</td></tr>
+</table>
+
+<h2>11 · Instability</h2>
+<p>The bar at the top left shows how close your universe is to falling apart. Drills in Central Park, Tesla generators, psy actions, portal trades and ether storms raise it; stabilizers lower it.</p>
+<ul>
+<li>From 50 %: doppelgängers appear, unrest rises.</li>
+<li>From 80 %: control slips away.</li>
+<li>At 100 %: your Manhattan dissolves – game over.</li>
+</ul>
+
+<h2>12 · Press, events and weather</h2>
+<p>Too much secret activity makes the newspapers curious. Above 60 press attention, loyalty drops every turn. Fog and the psy action Forget help.</p>
+<p>History runs on: Prohibition, mayoral elections, strikes, heat waves, ether storms, a stock market boom – and at some point Black Thursday.</p>
+<p>Weather: <b>rain</b> lowers unrest, <b>fog</b> lowers press attention, <b>storms</b> cut power output by 15 %.</p>
+
+<h2>13 · Tips for new agents</h2>
+<ul>
+<li>Build a generator early – without power nothing runs.</li>
+<li>A facility in every district pays off: more income and more control.</li>
+<li>Keep an eye on unrest. Calm is cheap.</li>
+<li>Start the anchor search in time – anchors need several turns to find and meet.</li>
+<li>A stabilizer in time saves your universe.</li>
+</ul>
+</div></div>
+<div class="modal" id="quitdlg" role="dialog" aria-modal="true" aria-labelledby="q_title"><div class="qbox"><button class="mclose" id="q_close" aria-label="Back to the game">✕</button><h2 id="q_title">QUIT GAME?</h2><p>Your universe will be lost to the Singularity.</p><div class="qbtns"><button class="btn" id="q_new">NEW GAME</button><button class="btn" id="q_exit">EXIT</button></div></div></div>
+<div class="modal" id="modal"><div class="pstack"><div class="paper" id="paper"></div></div></div>
+<script>
+const Music=(()=>{
+ const LOOP=['welcome_stranger','grammophone','clockwork','foxtrot','mrtesla','inkontheevidence','fogoncanal','rainyavenue','speakeasy'];const A={};
+ for(const n of[...LOOP,'news','victory','singularity']){const a=new Audio('music/'+n+'.mp3');a.preload=n==='news'||n===LOOP[0]?'auto':'none';A[n]=a}
+ let st={on:true,vol:60};try{Object.assign(st,JSON.parse(localStorage.getItem('singularity-sound')||'{}'))}catch(e){}
+ let idx=Math.floor(Math.random()*LOOP.length),mode='loop',unlocked=false;
+ const bgm=()=>A[LOOP[idx]];
+ const save=()=>{try{localStorage.setItem('singularity-sound',JSON.stringify(st))}catch(e){}};
+ // ambience: city sounds always, rain on rainy days (Web Audio for gapless loops)
+ let AC=null,ambG=null,rainG=null,wx='clear';const AMB=['ny_amb01','ny_amb02','rain_loop'];
+ function startAmb(){if(AC||!window.AudioContext)return;AC=new AudioContext();ambG=AC.createGain();rainG=AC.createGain();ambG.connect(AC.destination);rainG.connect(AC.destination);setAmb(true);
+  AMB.forEach(n=>fetch('music/'+n+'.mp3').then(r=>r.arrayBuffer()).then(b=>AC.decodeAudioData(b)).then(buf=>{const src=AC.createBufferSource();src.buffer=buf;src.loop=true;src.loopStart=.06;src.loopEnd=buf.duration-.06;src.connect(n==='rain_loop'?rainG:ambG);src.start(0,n==='ny_amb02'?buf.duration*.37:.06)}).catch(()=>{}))}
+ function setAmb(now){if(!AC)return;const v=st.on?st.vol/100*.7:0,t=AC.currentTime,k=now?.01:1.5;ambG.gain.setTargetAtTime(v,t,k*.3);rainG.gain.setTargetAtTime(wx==='rain'||wx==='storm'?v:0,t,k);if(st.on&&AC.state==='suspended')AC.resume()}
+ const apply=()=>{for(const n in A)A[n].volume=st.vol/100*(LOOP.includes(n)?.8:1);setAmb(true);document.getElementById('mus').classList.toggle('off',!st.on);document.getElementById('vol').value=st.vol};
+ const stopAll=()=>{for(const n in A)A[n].pause()};
+ const play=a=>{if(!st.on||!unlocked)return;a.play().catch(()=>{})};
+ const nextIdx=()=>{let n;do n=Math.floor(Math.random()*LOOP.length);while(n===idx&&LOOP.length>1);return n};
+ LOOP.forEach(n=>A[n].addEventListener('ended',()=>{idx=nextIdx();bgm().currentTime=0;if(mode==='loop')play(bgm())}));
+ A.news.addEventListener('ended',()=>{if(mode==='news'){mode='loop';play(bgm())}});
+ function resume(){stopAll();if(mode==='loop')play(bgm());else{const a=A[mode];play(a)}}
+ const api={
+  paper(over){stopAll();mode=over==='win'?'victory':over?'singularity':'news';A[mode].currentTime=0;play(A[mode])},
+  weather(w){if(w===wx)return;wx=w;setAmb(false)},
+  closePaper(){if(mode!=='loop'){A[mode].pause();A[mode].currentTime=0}mode='loop';resume()},
+ };
+ document.getElementById('mus').onclick=()=>{st.on=!st.on;save();apply();if(st.on){unlocked=true;startAmb();resume()}else stopAll()};
+ document.getElementById('vol').oninput=e=>{st.vol=+e.target.value;save();apply()};
+ const unlock=()=>{if(unlocked)return;unlocked=true;startAmb();resume()};
+ addEventListener('pointerdown',unlock,{once:true,capture:true});addEventListener('keydown',unlock,{once:true,capture:true});
+ apply();return api})();
+</script>
+<script>
+'use strict';
+// ---------- RNG ----------
+function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+
+// ---------- Daten ----------
+const DISTRICTS={
+ fidi:{name:'Financial District',base:7200,wohl:80,loyal:40,unruhe:20,h:[40,110],note:'Highest income, very sensitive to the stock market.'},
+ les:{name:'Lower East Side',base:2000,wohl:30,loyal:50,unruhe:55,h:[14,34],note:'Working-class district. Facilities 30 % cheaper, but unions strike when unrest is high.'},
+ village:{name:'Greenwich Village',base:2400,wohl:45,loyal:55,unruhe:30,h:[12,30],note:'Artists and speakeasies. Labs research faster (+1).'},
+ hells:{name:"Hell's Kitchen & Docks",base:2800,wohl:35,loyal:40,unruhe:50,h:[14,36],note:'Docks and the mob. Protection money: $300 per facility.'},
+ times:{name:'Times Square',base:4800,wohl:60,loyal:45,unruhe:40,h:[30,70],note:'Theatres and neon. With a facility here all psy actions are 50 % stronger; radio towers +2 psy.'},
+ midtown:{name:'Midtown',base:6000,wohl:70,loyal:45,unruhe:25,h:[50,120],note:'Skyscrapers. High power demand (+20 %).'},
+ park:{name:'Central Park',base:400,wohl:50,loyal:60,unruhe:10,h:[0,0],note:'Rift zone: drills yield +2 crystals, but +2 % instability.'},
+ harlem:{name:'Harlem',base:2400,wohl:40,loyal:55,unruhe:35,h:[16,40],note:'Jazz and radio. Radio towers are stronger.'}
+};
+const ADJ={fidi:['les','village'],les:['fidi','village','midtown'],village:['fidi','les','hells','times'],hells:['village','times','park'],times:['village','hells','midtown','park'],midtown:['les','times','park'],park:['hells','times','midtown','harlem'],harlem:['park']};
+const FAC={
+ gen:{name:'Coal Generator',cost:2000,bt:1,k:0,up:200,mw:-30,col:'#e0a43a',d:'+30 MW power'},
+ lab:{name:'Laboratory',cost:4000,bt:2,k:0,up:300,mw:10,col:'#b48ef0',d:'+5 Psy, +1 research'},
+ sender:{name:'Radio Tower',cost:5000,bt:2,k:0,up:300,mw:10,col:'#5fd4e0',d:'+3 Psy, +control'},
+ drill:{name:'Crystal Drill',cost:5000,bt:2,k:0,up:400,mw:15,col:'#d070e0',d:'+1 crystal (Park +2)'},
+ stab:{name:'Stabilizer',cost:6000,bt:3,k:0,up:400,mw:15,col:'#7fd68a',d:'−2 % instability',req:['aether',1]},
+ tesla:{name:'Tesla Generator',cost:6000,bt:3,k:2,up:300,mw:-60,col:'#ffd27a',d:'+60 MW, +1 % instability',req:['ind',2]},
+ portal:{name:'Portal',cost:15000,bt:4,k:5,up:600,mw:40,col:'#ffffff',d:'Crystal trade with a neighbouring universe',req:['aether',2]}
+};
+const RESEARCH={
+ ind:{name:'Industry',lv:['Efficient generators: +20 % power','Tesla Generator','Automation: −30 % upkeep']},
+ psy:{name:'Psy',lv:['Inspire','Spending Spree','Forget']},
+ aether:{name:'Ether',lv:['Stabilizer','Portal','Ether resonance: +1 crystal per drill']}
+};
+const RCOST=[8,16,28];
+const ANCHOR_RP=n=>10+n*5;   // research points to locate the next anchor
+const SCIENTISTS=[
+ {name:'Nikola Tesla',field:'electrical engineer',q:'He measures how the ether lines resonate beneath the city.'},
+ {name:'Marie Curie',field:'physicist & chemist',q:'Her radiation measurements reveal where the ether gathers.'},
+ {name:'Albert Einstein',field:'theoretical physicist',q:'His field equations bend in a strange way above one Manhattan landmark.'},
+ {name:'Niels Bohr',field:'physicist',q:'His model of the atom points to a stable state hidden in the city.'},
+ {name:'Lise Meitner',field:'physicist',q:'She spots a pattern in the crystal decay that leads to an anchor.'},
+ {name:'Robert Goddard',field:'rocket engineer',q:'From his test flights he saw an anomaly above the skyline.'},
+ {name:'Emmy Noether',field:'mathematician',q:'Her symmetry theorem shows where the multiverse is held together.'},
+ {name:'Edwin Hubble',field:'astronomer',q:'Through his telescope a building seems to exist in two places at once.'}];
+const MAX_SCI=3;
+// agent cards (art/sci_<id>.png, PixelLab): spionage/sabotage values + special ability, for the later multiplayer
+const SCI_CARD={
+ 'Nikola Tesla':{id:'tesla',spy:2,sab:5,ab:'Ether Coil – overloads a rival generator for 2 turns.'},
+ 'Marie Curie':{id:'curie',spy:4,sab:3,ab:'Radiant Trace – reveals a rival\'s crystal stock.'},
+ 'Albert Einstein':{id:'einstein',spy:5,sab:2,ab:'Relative Frame – learns a rival\'s research goal.'},
+ 'Niels Bohr':{id:'bohr',spy:3,sab:3,ab:'Complementarity – a failed mission is never traced back to you.'},
+ 'Lise Meitner':{id:'meitner',spy:4,sab:4,ab:'Fission – halves a rival\'s next crystal yield.'},
+ 'Robert Goddard':{id:'goddard',spy:3,sab:4,ab:'Skyward – delays a rival facility under construction by 1 turn.'},
+ 'Emmy Noether':{id:'noether',spy:5,sab:1,ab:'Invariant – reveals which anchors a rival holds.'},
+ 'Edwin Hubble':{id:'hubble',spy:4,sab:2,ab:'Redshift – shows a rival\'s instability trend.'}};
+function sciCard(n){const sc=SCIENTISTS.find(x=>x.name===n),c=SCI_CARD[n];
+ return`<div class="scard"><div class="sname">${n}</div><div class="sart"><img src="art/sci_${c.id}.png" alt="Portrait of ${n}" width="128" height="128"></div><div class="stype">Agent · ${sc.field}</div><div class="stext">${c.ab}</div><div class="sstats"><span title="Espionage"><img src="ui/ico_psy.png" alt="">SPY ${c.spy}</span><span title="Sabotage"><img src="ui/ico_power.png" alt="">SAB ${c.sab}</span></div></div>`}
+function sciBack(){return`<div class="scard back"><div class="sback"><img src="logo-mark.svg" alt=""><b>CLASSIFIED</b><small>Bureau dossier</small></div></div>`}
+const PSY={
+ calm:{name:'Calm',cost:5,d:'−6 unrest'},
+ inspire:{name:'Inspire',cost:8,d:'+6 loyalty',req:['psy',1]},
+ whisper:{name:'Whisper',cost:10,d:'+4 control'},
+ frenzy:{name:'Spending Spree',cost:12,d:'+20 % income for 2 turns',req:['psy',2]},
+ forget:{name:'Forget',cost:15,d:'Press attention −30',req:['psy',3],global:true}
+};
+const ANCHORS=[
+ {id:'esb',name:'Empire State Building',kind:'fixed',k:10,cond:'Build a portal',test:s=>count(s,'portal')>=1,pos:[6,10],h:100},
+ {id:'chrysler',name:'Chrysler Building',kind:'fixed',k:8,cond:'2 Tesla generators',test:s=>count(s,'tesla')>=2,pos:[8,12],h:90},
+ {id:'flatiron',name:'Flatiron Building',kind:'fixed',k:12,cond:'All research branches at level 2',test:s=>Object.values(s.res).every(v=>v>=2),pos:[4,8],h:70},
+ {id:'brooklyn',name:'Brooklyn Bridge',kind:'fixed',k:8,cond:'Control ≥ 60 % and a facility in the Lower East Side',test:s=>s.c.kontrolle>=60&&s.slots.les.some(f=>f),pos:[9,3],h:0},
+ {id:'park',name:'Central Park (The Rift)',kind:'fixed',k:10,cond:'2 crystal drills in Central Park',test:s=>s.slots.park.filter(f=>f&&f.t==='drill').length>=2,pos:[4,16],h:0},
+ {id:'wall',name:'Wall Street',kind:'roaming',k:6,cond:'Income ≥ $6,000 per turn',test:s=>s.lastIncome>=6000,pos:[5,1],h:90},
+ {id:'woolworth',name:'Woolworth Building',kind:'roaming',k:6,cond:'At least 8 facilities',test:s=>totalFac(s)>=8,pos:[3,3],h:120},
+ {id:'grand',name:'Grand Central',kind:'roaming',k:8,cond:'Control ≥ 50 % and facilities in 5 districts',test:s=>s.c.kontrolle>=50&&Object.values(s.slots).filter(a=>a.some(f=>f)).length>=5,pos:[7,12],h:50},
+ {id:'times',name:'Times Square',kind:'roaming',k:8,cond:'Psy reserve ≥ 150',test:s=>s.psy>=150,pos:[4,11],h:60},
+ {id:'liberty',name:'Statue of Liberty',kind:'roaming',k:6,cond:'Instability ≤ 10 % from epoch 3',test:s=>s.inst<=10&&epoch(s)>=3,pos:[-2,-2],h:0}
+];
+const PULP=[
+ ['MAN MEETS HIMSELF ON 5TH AVENUE',"Clerk insists the stranger who borrowed his umbrella was \"me, but with a better moustache\". Police decline to comment."],
+ ['GLOWING FOG SEEN OVER CENTRAL PARK','Park keepers report a green mist that hums in B-flat. Jazz musicians call it \"the coolest sound in town\".'],
+ ['PIGEONS FLY BACKWARDS IN HARLEM','Ornithologists baffled. One bird reportedly arrived before it left.'],
+ ['TESLA DENIES EVERYTHING','The famous inventor, seen near a crackling tower at 3 a.m., told reporters he was "merely tuning the radio".'],
+ ['RADIO PLAYS TOMORROW\'S NEWS','Listeners in Hell\'s Kitchen claim a broadcast described events that had not yet happened. The station blames sunspots.'],
+ ['SPEAKEASY VANISHES – PATRONS DO NOT NOTICE','A Greenwich Village bar was gone for exactly one hour. Regulars say the gin tasted "slightly more real" afterwards.'],
+ ['CLOCKS ON WALL STREET RUN 7 MINUTES AHEAD','Bankers delighted; profits now arrive before the market opens.'],
+ ['MYSTERIOUS GOVERNMENT MEN IN GREY SUITS','Witnesses describe polite gentlemen asking about "strange lights". Washington says no such men exist. Neither, it adds, does the Bureau.'],
+ ['WOMAN FINDS DOOR IN HER WALL THAT WAS NOT THERE','It leads to an identical apartment, where her cat already lives. "Two cats are better than one," she says.'],
+ ['SCIENTISTS DEBATE: CAN A CITY BE IN TWO PLACES AT ONCE?','The answer, according to a nervous professor, is "yes, but please stop asking".']];
+const ROUNDS=48,PER_EPOCH=8,WIN=6;
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ---------- Karte ----------
+// Manhattan silhouette: [west,east] land columns per row (south tip → Harlem), x 0 = Hudson side
+const ISLE=[[3,5],[2,6],[1,7],[1,8],[0,8],[0,9],[0,10],[0,10],[0,9],[0,9],[0,9],[0,9],[0,9],[1,8],[1,8],[1,8],[1,8],[1,8],[1,8],[1,8],[1,8],[1,8],[1,7],[2,7],[2,6],[3,6]];
+function districtAt(x,y){
+ if(y<0||y>25)return null;const [a,b]=ISLE[y];if(x<a||x>b)return null;
+ if(y<=3)return'fidi';
+ if(y<=7)return x<5?'village':'les';
+ if(y<=12){if(x<3)return'hells';if(x<=5)return'times';return'midtown'}
+ if(y<=19)return'park';
+ return'harlem';
+}
+const TILES=[];for(let y=0;y<26;y++)for(let x=0;x<11;x++){const d=districtAt(x,y);if(d)TILES.push({x,y,d})}
+
+// ---------- Zustand ----------
+let S;
+function newGame(seed){
+ seed=seed||Math.floor(Math.random()*1e9);
+ const r=rng(seed);
+ const startable=['les','village','hells','harlem'];
+ const start=startable[Math.floor(r()*startable.length)];
+ const slots={};for(const k in DISTRICTS)slots[k]=[null,null,null];
+ // Slot-Kacheln je Bezirk festlegen
+ const slotTiles={};
+ for(const k in DISTRICTS){const ts=TILES.filter(t=>t.d===k&&!ANCHORS.some(a=>a.pos[0]===t.x&&a.pos[1]===t.y));const pick=[];while(pick.length<3){const t=ts[Math.floor(r()*ts.length)];if(!pick.includes(t))pick.push(t)}slotTiles[k]=pick.map(t=>[t.x,t.y])}
+ const heights=genHeights(r);
+ // Ereignisplan
+ const ev={};
+ ev[1]='prohibition';ev[9]='election';ev[33]='election';
+ for(let i=18;i<=26;i++)ev[i]=ev[i]||'boom';
+ for(let i=41;i<ROUNDS;i++)ev[i]='crash';
+ for(let i=2;i<41;i++){if(ev[i])continue;const m=monthOf(i);if(m>=5&&m<=7&&r()<.6){ev[i]='heat';continue}const q=r();if(q<.12)ev[i]='strike';else if(q<.2)ev[i]='storm'}
+ S={seed,found:{},sci:[],anchorRP:0,anchorFinds:0,weather:'clear',round:0,money:20000,psy:0,crystals:2,rp:0,inst:5,attention:0,res:{ind:0,psy:0,aether:0},resTarget:'ind',
+  c:{wohl:55,loyal:50,unruhe:35,kontrolle:25,frenzy:0},slots,slotTiles,heights,hv:HEIGHTS_V,events:ev,anchors:{},lastIncome:0,mw:{prod:0,use:0},log:[],sel:null,start,over:null,paper:null,boom:false,crash:false,prohibition:false};
+ // Startanlagen
+ S.slots[start][0]={t:'gen',off:0};S.slots[start][1]={t:'lab',off:0};
+ computePower();
+ S.paper={title:'The Bureau Awakens',items:[['A rift in the ether','An experiment with ether crystals has split the world. Somewhere, countless other Manhattans exist.'],['Your bureau',`A secret division of the Bureau of Investigation, unknown to the public. You operate out of ${DISTRICTS[start].name}. A generator and a laboratory are ready.`],['Your goal',`Locate the hidden anchors through research, then activate ${WIN} of the 10 landmarks before the world collapses. Each one needs ether crystals. Keep instability below 100 %.`]]};
+ save();
+}
+function nextWeather(){const r=rng(S.seed+S.round*31)();const m=monthOf(S.round);if(S.events[S.round]==='storm')return'storm';const summer=m>=5&&m<=7,winter=m>=10||m<=1;if(r<(summer?.55:winter?.3:.4))return'clear';if(r<(summer?.75:.65))return'rain';if(r<(winter?.92:.88))return'fog';return'storm'}
+function monthOf(r){return Math.floor(r*2.5)%12}
+function yearOf(r){return 1920+Math.floor(r*2.5/12)}
+function epoch(s){return Math.floor(s.round/PER_EPOCH)+1}
+function count(s,t){let n=0;for(const k in s.slots)s.slots[k].forEach(f=>{if(f&&f.t===t)n++});return n}
+function totalFac(s){let n=0;for(const k in s.slots)s.slots[k].forEach(f=>{if(f)n++});return n}
+function has(req){return !req||S.res[req[0]]>=req[1]}
+// Skyline: mostly low blocks, towers only in a few clusters (Financial District, Midtown, a few at Times Square).
+// [low block min, max, tower chance, tower min, max] per district
+const SKY={fidi:[6,14,.2,60,110],midtown:[6,16,.17,60,120],times:[6,14,.1,35,60],les:[3,9,.03,16,26],village:[3,8,.02,16,24],hells:[3,9,.03,16,26],harlem:[3,9,.03,16,28],park:[0,0,0,0,0]};
+const HEIGHTS_V=2;
+function genHeights(r){const h={};TILES.forEach(t=>{const [a,b,p,ta,tb]=SKY[t.d]||[3,9,0,0,0];
+ h[t.x+','+t.y]=r()<p?ta+Math.floor(r()*(tb-ta+1)):a+Math.floor(r()*(b-a+1))});return h}
+function save(){try{localStorage.setItem('singularity-proto-en5',JSON.stringify(S))}catch(e){}}
+function load(){try{const j=localStorage.getItem('singularity-proto-en5');if(j){S=JSON.parse(j);S.found=S.found||{};S.sci=S.sci||[];S.anchorRP=S.anchorRP||0;S.anchorFinds=S.anchorFinds||0;for(const id in S.anchors)S.found[id]=true;if(S.hv!==HEIGHTS_V){S.heights=genHeights(rng(7919));S.hv=HEIGHTS_V}return true}}catch(e){}return false}
+
+// ---------- Simulation ----------
+function computePower(){
+ let prod=0,use=0;const cons=[];
+ for(const k in S.slots)S.slots[k].forEach(f=>{if(!f||f.bt>0)return;const F=FAC[f.t];if(F.mw<0){prod+=-F.mw}else if(F.mw>0)cons.push({f,k,mw:F.mw*(k==='midtown'?1.2:1)})});
+ if(S.res.ind>=1)prod*=1.2;
+ if(S.events[S.round]==='heat')cons.forEach(c=>c.mw*=1.2);
+ if(S.weather==='storm')prod*=.85;
+ cons.forEach(c=>c.f.nopower=false);
+ for(const c of cons){if(c.f.off>0)continue;if(use+c.mw<=prod){use+=c.mw}else c.f.nopower=true}
+ S.mw={prod:Math.round(prod),use:Math.round(use)};
+}
+function online(f){return f&&!f.off&&!f.nopower&&!(f.bt>0)}
+function endRound(){
+ if(S.over)return;
+ const msgs=[];const r=rng(S.seed+S.round*7919);
+ computePower();
+ let income=1000,upkeep=0,psy=0,rp=0,kr=0,inst=0;
+ const ev=S.events[S.round];
+ const c=S.c;let distWith=0,facOn=0;
+ for(const k in DISTRICTS){
+  const D=DISTRICTS[k];const present=S.slots[k].some(f=>f);if(present)distWith++;
+  let inc=D.base*(c.wohl/100)*(c.kontrolle/100)*(1-c.unruhe/200)*(present?1:.3);
+  if(k==='fidi'&&ev==='boom')inc*=1.3;
+  if(ev==='crash')inc*=.5;
+  if(c.frenzy>0)inc*=1.2;
+  income+=inc;
+  S.slots[k].forEach(f=>{
+   if(!f||f.bt>0)return;
+   const F=FAC[f.t];upkeep+=F.up*(S.res.ind>=3?.7:1);
+   if(k==='hells')upkeep+=300;
+   if(!online(f))return;facOn++;
+   if(f.t==='lab'){psy+=5;rp+=1+(k==='village'?1:0)}
+   if(f.t==='sender'){psy+=3+(k==='harlem'||k==='times'?2:0);c.kontrolle+=.4}
+   if(f.t==='drill'){let cr=k==='park'?2:1;if(S.res.aether>=3)cr+=1;if(ev==='storm'&&k==='park')cr*=1.5;kr+=cr;if(k==='park')inst+=2}
+   if(f.t==='stab')inst-=2;
+   if(f.t==='tesla')inst+=1;
+  });
+ }
+ if(c.frenzy>0){c.frenzy--;if(c.frenzy===0)c.unruhe+=10}
+ // city dynamics (one set of values for all of Manhattan)
+ c.unruhe+=(35-c.unruhe)*.1+facOn*.12;
+ c.loyal+=(50-c.loyal)*.05;
+ c.wohl+=(55-c.wohl)*.1;
+ c.kontrolle+=-1.2+distWith*.2+(c.loyal-50)/40;
+ // factions
+ S.attention=Math.max(0,S.attention-2);
+ if(S.attention>60){c.loyal-=3;msgs.push(['The press grows curious','Newspapers report strange goings-on. Loyalty drops.'])}
+ if(c.unruhe>70&&r()<.35){const all=[];for(const k in S.slots)S.slots[k].forEach(f=>{if(f)all.push([k,f])});if(all.length){const [k,f]=all[Math.floor(r()*all.length)];f.off=2;msgs.push(['Police raid in '+DISTRICTS[k].name,`The police shut down your ${FAC[f.t].name} for two turns.`])}}
+ if(c.unruhe>60&&S.slots.les.some(f=>f)){S.slots.les.forEach(f=>{if(f)f.off=Math.max(f.off,1)});msgs.push(['Unions on strike','Your facilities in the Lower East Side stand still for one turn.'])}
+ // events
+ if(ev==='prohibition'&&!S.prohibition){S.prohibition=true;c.unruhe+=5;c.wohl+=3;msgs.push(['Prohibition!','Alcohol is banned. Speakeasies flourish, the mob at the docks grows stronger.'])}
+ if(ev==='election'){const mob=r()<.5;if(mob)c.unruhe+=8;else c.unruhe-=5;msgs.push(['Mayoral election',mob?'Tammany Hall wins with help from the mob. The city grows restless.':'A reformer wins. The city calms down a little.'])}
+ if(ev==='boom'&&!S.boom){S.boom=true;msgs.push(['Stock market boom','Prices soar. The Financial District earns 30 % more.'])}
+ if(ev==='heat')msgs.push(['Heat wave','Fans and iceboxes run day and night. Power demand rises by 20 %.']);
+ if(ev==='strike'){c.unruhe+=10;msgs.push(['Wave of strikes','Workers lay down their tools. Unrest rises across Manhattan.'])}
+ if(ev==='storm'){inst+=3;msgs.push(['Ether storm','A green glow over Central Park. Drills there yield 50 % more, instability rises.'])}
+ if(ev==='crash'&&!S.crash){S.crash=true;c.unruhe+=20;msgs.push(['BLACK THURSDAY','The stock market crashes. Income halved, unrest everywhere.'])}
+ // Instability
+ S.inst=clamp(S.inst+inst,0,100);
+ if(S.inst>=50){c.unruhe+=5;msgs.push(['Anomalies in Manhattan','Doppelgängers have been sighted. People are afraid.'])}
+ if(S.inst>=80)c.kontrolle-=2;
+ // Bilanz
+ S.money+=income-upkeep;S.psy+=psy;S.crystals+=kr;S.rp+=rp;S.lastIncome=Math.round(income);
+ // Forschung
+ if(S.resTarget==='anchor'){const need=ANCHOR_RP(S.anchorFinds);if(ANCHORS.some(a=>!S.found[a.id])&&S.rp>=need){S.rp-=need;S.anchorFinds++;const a=revealAnchor(r);if(a)msgs.push(['Anchor located',`Our ether cartographers have pinpointed an anchor: ${a.name}. Condition: ${a.cond}.`])}}
+ if(S.round>=2&&S.sci.length<MAX_SCI&&r()<.08){const pool=SCIENTISTS.filter(x=>!S.sci.includes(x.name));const sc=pool[Math.floor(r()*pool.length)];S.sci.push(sc.name);const a=revealAnchor(r);
+  msgs.unshift([`${sc.name} joins the bureau`,`The ${sc.field} has agreed to work for us in secret. ${sc.q} `+(a?`Anchor revealed: ${a.name}.`:`Every anchor is already known – instead, +10 research.`)]);if(!a)S.rp+=10}
+ const t=S.resTarget;if(t&&t!=='anchor'&&S.res[t]<3&&S.rp>=RCOST[S.res[t]]){S.rp-=RCOST[S.res[t]];S.res[t]++;msgs.push(['Breakthrough in the lab',`${RESEARCH[t].name} level ${S.res[t]}: ${RESEARCH[t].lv[S.res[t]-1]}.`])}
+ // Pleite
+ if(S.money<0){S.c.loyal-=5;msgs.push(['Coffers empty','Wages go unpaid. Loyalty drops.'])}
+ for(const k in S.slots)S.slots[k].forEach(f=>{if(f&&f.off>0)f.off--;if(f&&f.bt>0){f.bt--;if(!f.bt)msgs.push([FAC[f.t].name+' completed',`Construction in ${DISTRICTS[k].name} is finished. The facility is now running.`])}});
+ for(const v of['wohl','loyal','unruhe','kontrolle'])S.c[v]=clamp(S.c[v],0,100);
+ // weather effects of the turn that just ended
+ if(S.weather==='rain')S.c.unruhe=Math.max(0,S.c.unruhe-2);
+ if(S.weather==='fog')S.attention=Math.max(0,S.attention-3);
+ S.round++;
+ S.weather=nextWeather();
+ const WTXT={clear:['Clear skies','Sunshine over Manhattan. Zeppelins cast long shadows.'],rain:['Rain','Rain keeps people indoors. Unrest −2.'],fog:['Thick fog','Fog rolls in from the harbour. Press attention −3.'],storm:['Thunderstorm','Lightning over the rivers. Power output −15 % this turn.']};
+ msgs.push(['Weather: '+WTXT[S.weather][0],WTXT[S.weather][1]]);
+ // End of epoch: check roaming anchors
+ if(S.round%PER_EPOCH===0){
+  const lost=[];ANCHORS.forEach(a=>{if(a.kind==='roaming'&&S.anchors[a.id]&&!a.test(S)){delete S.anchors[a.id];lost.push(a.name)}});
+  msgs.unshift(['Sync point: epoch '+(epoch(S)-1)+' complete',lost.length?'Lost: '+lost.join(', ')+'.':'All anchors held. Active anchors: '+Object.keys(S.anchors).length+' of 10.']);
+  if(Object.keys(S.anchors).length>=WIN)S.over='win';
+ }
+ if(S.inst>=100)S.over='lose-inst';
+ if(S.round>=ROUNDS&&!S.over)S.over=Object.keys(S.anchors).length>=WIN?'win':'lose-time';
+ computePower();
+ if(!msgs.length)msgs.push(['Quiet weeks','The city goes about its business.']);
+ msgs.push(['Balance',`Income $${fmt(income)} (incl. $1,000 federal black budget), upkeep $${fmt(upkeep)}. +${psy} Psy, +${Math.round(kr)} crystals, +${rp} research.`]);
+ S.log.unshift({round:S.round,items:msgs});S.log=S.log.slice(0,30);
+ if(!S.over){const pool=PULP.filter((_,i)=>!(S.pulpUsed||[]).includes(i));if(pool.length&&r()<.6){const i=PULP.indexOf(pool[Math.floor(r()*pool.length)]);(S.pulpUsed=S.pulpUsed||[]).push(i);msgs.splice(Math.min(1,msgs.length),0,PULP[i])}}
+ const HEADS=['The Manhattan Ether','The Evening Anomaly','The Manhattan Ether – Extra!','The Daily Paradox','The Manhattan Ether'];
+ S.paper={title:S.over?endTitle():HEADS[S.round%HEADS.length],items:S.over?endItems():msgs};
+ if(!S.over&&!S.bridgeMan&&S.inst>50){ // one-time special edition the first time instability passes 50 %
+  S.bridgeMan=true;S.paper.title='Man Found Fused Into Brooklyn Bridge';S.paper.photo='art/paper_bridgeman.png';
+  S.paper.items.unshift(['Horror on the East River','Before dawn, patrolmen discovered a stevedore sealed inside the stone of the bridge\'s Manhattan tower, alive and whispering, as if the granite had grown around him. Engineers swear the masonry is unbroken.'],
+   ['"The city is coming loose"','Dr. Elias Crane warns that reality itself is thinning. Where the ether frays, matter forgets where it ends. Bureau agents have closed the bridge until further notice.'])}
+ save();render();showPaper();
+}
+function endTitle(){return S.over==='win'?'The Universe Holds':'The Singularity'}
+function endItems(){
+ const n=Object.keys(S.anchors).length;
+ if(S.over==='win')return[['Victory!',`With ${n} active anchors your Manhattan is stable. All other universes fall into the singularity.`],['Turn',S.round+' of '+ROUNDS]];
+ if(S.over==='quit')return[['Bureau dissolved','You have abandoned the operation. Without its secret guardians nobody tends the anchors any more. Your Manhattan slowly drifts into its neighbouring universes – first the pigeons fly backwards, then the clocks disagree, and finally the city simply forgets which version of itself it was.'],['The Singularity',`It swallows your universe in ${MONTHS[monthOf(S.round)]} ${yearOf(S.round)}. Somewhere, another bureau keeps its Manhattan stable – but it is not yours.`]];
+ if(S.over==='lose-inst')return[['Collapse','Instability has reached 100 %. Your Manhattan dissolves into the ether.']];
+ return[['Out of time',`October 1929. Only ${n} of the ${WIN} required anchors are active. Your universe falls apart.`]];
+}
+
+// ---------- Aktionen ----------
+function build(k,i,t){
+ const F=FAC[t];let cost=F.cost*(k==='les'?.7:1);
+ if(S.money<cost||S.crystals<F.k||!has(F.req))return;
+ S.money-=cost;S.crystals-=F.k;S.slots[k][i]={t,off:0,bt:F.bt};S.c.unruhe+=2;computePower();save();render();
+}
+function demolish(k,i){S.slots[k][i]=null;computePower();save();render()}
+function usePsy(k,a){
+ const P=PSY[a];if(S.psy<P.cost||!has(P.req))return;
+ S.psy-=P.cost;S.attention+=3;S.inst=clamp(S.inst+.5,0,100);
+ const m=S.slots.times.some(f=>f)?1.5:1;const d=S.c;
+ if(a==='calm')d.unruhe-=6*m;if(a==='inspire')d.loyal+=6*m;if(a==='whisper')d.kontrolle+=4*m;if(a==='frenzy')d.frenzy=2;if(a==='forget')S.attention=Math.max(0,S.attention-30);
+ for(const v of['wohl','loyal','unruhe','kontrolle'])d[v]=clamp(d[v],0,100);
+ save();render();
+}
+function revealAnchor(r){const hidden=ANCHORS.filter(a=>!S.found[a.id]);if(!hidden.length)return null;const a=hidden[Math.floor(r()*hidden.length)];S.found[a.id]=true;return a}
+function activate(id){const a=ANCHORS.find(a=>a.id===id);if(!S.found[id]||S.anchors[id]||!a.test(S)||S.crystals<a.k)return;S.crystals-=a.k;S.anchors[id]=S.round;save();render()}
+function trade(){if(count(S,'portal')<1||S.money<2500)return;const online=S.slots&&Object.keys(S.slots).some(k=>S.slots[k].some(f=>f&&f.t==='portal'&&!f.off&&!f.nopower));if(!online)return;S.money-=2500;S.crystals+=1;S.inst=clamp(S.inst+1,0,100);save();render()}
+
+// ---------- Drawing (detailed isometric pixel art) ----------
+const cv=document.getElementById('map'),mcx=cv.getContext('2d');const RS=innerWidth<900?3:4;cv.width=760*RS;cv.height=600*RS;
+const W=19,H=9.5,OX=95,OY=420,SC=RS;           // logical world -> main canvas (x2)
+const LW=cv.width/SC,LH=cv.height/SC;           // logical size
+function mk(w=LW*RS,h=LH*RS){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+const city=mk(),mask=mk(),fx=mk(),cars=mk();
+const fxc=fx.getContext('2d'),carc=cars.getContext('2d');
+const idmap=mk(),dimmask=mk();let IDM=false,CURID='#000000';const DIDX={};Object.keys(DISTRICTS).forEach((k,i)=>DIDX[k]='#'+((i+1)*24).toString(16).padStart(2,'0')+'0000');
+let cx=city.getContext('2d');let MASK=false;const USED=new Set();
+const LIGHTS=[],SMOKE_SRC=[];
+function P(gx,gy,z=0){return[OX+(gx+gy)*W,OY+(gx-gy)*H-z]}
+// ---------- PixelLab sprites (sprites/*.png) ----------
+// Each sprite is night-graded on load (desaturated + darkened like night(), bright light pixels kept),
+// measured (opaque bounding box, topmost pixel) and pre-mirrored for the opposite direction.
+const SPR={};const SPR_NAMES=['lab','drill','gen','liberty','park','bridge','zeppelin_sw','zeppelin_ne','biplane','boat_tug','boat_steamer','boat_barge','boat_ferry','ground','ground_side','water',
+ ...['harlem','les','village','hells','times','midtown','fidi'].flatMap(d=>[d,d+'_2',d+'_3',d+'_4',d+'_5'].map(n=>'bld/'+n))];
+// low-rise blocks up to this height use the district's building sprite; taller ones stay procedural towers
+const BLD_MAXH=30,BLD_W={harlem:28,les:28,village:28,hells:30,times:30,midtown:30,fidi:30};
+// 5 building types per district (sprites/bld/<d>.png, <d>_2..5.png), sorted by how tall they are (bbox height / width)
+let BLD_SORTED={};
+function bldPick(d,hgt,r){let L=BLD_SORTED[d];
+ if(!L){L=[d,d+'_2',d+'_3',d+'_4',d+'_5'].map(n=>'bld/'+n).filter(n=>SPR[n]).sort((a,b)=>SPR[a].bh/SPR[a].bw-SPR[b].bh/SPR[b].bw);if(L.length===5)BLD_SORTED[d]=L}
+ if(!L.length)return null;const [a,b]=SKY[d]||[3,9];const f=Math.max(0,Math.min(1,(hgt-a)/Math.max(1,b-a)));
+ const i=Math.max(0,Math.min(L.length-1,Math.round(f*(L.length-1)+(r()-.5)*2.2)));return L[i]}
+const SPR_RAW=new Set(['ground','ground_side','water']); // already night-graded / masks: no colour grading
+function nightSprite(im,raw){
+ const hiRes=im.width>=128;
+ const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+ const img=x.getImageData(0,0,c.width,c.height),d=img.data;let bx0=1e9,by0=1e9,bx1=-1,by1=-1,tx=0,ty=1e9;
+ for(let i=0;i<d.length;i+=4){if(d[i+3]<20){d[i+3]=0;continue}const px=(i>>2)%c.width,py=(i>>2)/c.width|0;
+  bx0=Math.min(bx0,px);bx1=Math.max(bx1,px);by0=Math.min(by0,py);by1=Math.max(by1,py);if(py<ty){ty=py;tx=px}
+  if(raw)continue;
+  const r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx?(mx-mn)/mx:0;
+  if(mx>170&&sat>.3&&(g>130||b>150))continue; // lit windows, neon, crystals, torch keep glowing (red brick does not)
+  const l=.3*r+.59*g+.11*b,f=hiRes?.6:.78,k=hiRes?.5:.6;d[i]=(r*k+l*(1-k))*f;d[i+1]=(g*k+l*(1-k))*f;d[i+2]=(b*k+l*(1-k))*f+6} // hi-res Pro sprites are lighter: grade them darker
+ x.putImageData(img,0,0);
+ const m=document.createElement('canvas');m.width=c.width;m.height=c.height;const mx=m.getContext('2d');mx.translate(c.width,0);mx.scale(-1,1);mx.drawImage(c,0,0);
+ return{c,m,bx0,by0,bw:bx1-bx0+1,bh:by1-by0+1,tx,ty}}
+let sprLeft=SPR_NAMES.length;
+const sprDone=()=>{if(!--sprLeft&&S&&S.slots)try{draw()}catch(e){}};
+SPR_NAMES.forEach(n=>{const im=new Image();im.onload=()=>{SPR[n]=nightSprite(im,SPR_RAW.has(n));sprDone()};im.onerror=sprDone;im.src='sprites/'+n+'.png'});
+// draw sprite n so that the bottom-centre of its opaque box sits at logical (x,y), opaque box w logical px wide.
+// Returns the logical rect of the opaque box and the topmost pixel.
+function spr(ctx,n,x,y,w,flip=false,mode=null){const s=SPR[n];if(!s)return null;const k=w/s.bw,dw=s.c.width*k,dh=s.c.height*k;
+ let ox=s.bx0,tx=s.tx;if(flip){ox=s.c.width-s.bx0-s.bw;tx=s.c.width-1-s.tx}
+ const dx=x-(ox+s.bw/2)*k,dy=y-(s.by0+s.bh)*k;
+ if(mode==='mask'){ctx.globalCompositeOperation='destination-out';ctx.drawImage(flip?s.m:s.c,dx,dy,dw,dh);ctx.globalCompositeOperation='source-over'}
+ else if(mode==='id'){ctx.fillStyle=CURID;ctx.fillRect(dx+ox*k,dy+s.by0*k,s.bw*k,s.bh*k)}
+ else{const sm=ctx.imageSmoothingEnabled,hi=s.c.width>=128;ctx.imageSmoothingEnabled=hi;if(hi)ctx.imageSmoothingQuality='high';ctx.drawImage(flip?s.m:s.c,dx,dy,dw,dh);ctx.imageSmoothingEnabled=sm} // hi-res sprites are downscaled smoothly, small ones stay crisp
+ return{x:dx+ox*k,y:dy+s.by0*k,w:s.bw*k,h:s.bh*k,top:[dx+(tx+.5)*k,dy+(s.ty+.5)*k],d:[dx,dy,dw,dh]}}
+// Statue of Liberty cut out of the finished city canvas, so boats/ships passing behind it can be overdrawn
+let LIB_RECT=null,LIB_OVER=null;
+function buildLibOver(){LIB_OVER=null;if(!LIB_RECT||!SPR.liberty)return;const [x,y,w,h]=LIB_RECT;
+ const X=Math.floor(x*RS),Y=Math.floor(y*RS),Wd=Math.ceil(w*RS)+2,Hd=Math.ceil(h*RS)+2;const o=document.createElement('canvas');o.width=Wd;o.height=Hd;
+ const oc=o.getContext('2d');oc.drawImage(city,X,Y,Wd,Hd,0,0,Wd,Hd);oc.globalCompositeOperation='destination-in';oc.imageSmoothingEnabled=false;oc.drawImage(SPR.liberty.c,x*RS-X,y*RS-Y,w*RS,h*RS);
+ LIB_OVER={c:o,x:X/RS,y:Y/RS,w:Wd/RS,h:Hd/RS}}
+const sprMode=()=>IDM?'id':MASK?'mask':null;
+// night palette: everything is pushed towards grey/black, only light sources and the ether stay bright
+const GLOW=new Set(['#7fb8a0','#6aa48c','#558a74','#3f6e5c','#a8d4c0','#c8b89a','#a89878','#8a7a60','#f0c860','#d8a848','#e0a43a','#ffd27a','#f06a6a','#5fd4e0','#bff3f8','#b48ef0','#8a6cc8','#c0a0f0','#a080e0','#7a5aa8','#c84a3a','#d070e0','#7fd68a','#d8c060','#ffffff','#1f5a62','#4a8a5a']);
+const DARK=new Map();
+function night(c){if(GLOW.has(c))return c;let d=DARK.get(c);if(d)return d;const n=parseInt(c.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const l=.3*r+.59*g+.11*b;
+ r=r*.45+l*.55;g=g*.45+l*.55;b=b*.45+l*.55+6; // desaturate, slight blue
+ const f=.57;r*=f;g*=f;b*=f;d='#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');DARK.set(c,d);return d}
+function hex(c){c=night(c);USED.add(c);return c}
+function mix(a,b,t){const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);const f=(s)=>Math.round(((A>>s)&255)*(1-t)+((B>>s)&255)*t);return'#'+[16,8,0].map(s=>f(s).toString(16).padStart(2,'0')).join('')}
+function shade(c,f){return f>1?mix(c,'#ffffff',f-1):mix(c,'#000000',1-f)}
+function poly(pts,fill,street=false){
+ cx.beginPath();pts.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();
+ if(IDM){cx.fillStyle=CURID;cx.fill();return}
+ if(MASK){cx.globalCompositeOperation=street?'source-over':'destination-out';cx.fillStyle='#fff';cx.fill();cx.globalCompositeOperation='source-over';return}
+ if(typeof fill==='object'){let y0=1e9,y1=-1e9;for(const p of pts){y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])}const gr=cx.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,hex(fill.a));gr.addColorStop(1,hex(fill.b));cx.fillStyle=gr}else cx.fillStyle=hex(fill);cx.fill();
+}
+const RD=v=>Math.round(v*RS)/RS;
+function rect(x,y,w,h,c){w=Math.max(1/RS,RD(w));h=Math.max(1/RS,RD(h));if(IDM){cx.fillStyle=CURID;cx.fillRect(RD(x),RD(y),w,h);return}if(MASK){cx.globalCompositeOperation='destination-out';cx.fillStyle='#fff';cx.fillRect(RD(x),RD(y),w,h);cx.globalCompositeOperation='source-over';return}cx.fillStyle=hex(c);cx.fillRect(RD(x),RD(y),w,h)}
+function line(a,b,c,w=1){if(MASK)return;cx.strokeStyle=hex(c);cx.lineWidth=w;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}
+function quad(x0,y0,x1,y1,z){return[P(x0,y0,z),P(x0,y1,z),P(x1,y1,z),P(x1,y0,z)]}
+// box: footprint [x0,x1]x[y0,y1], from z0 to z0+h – with facade detail
+function box(x0,y0,x1,y1,z0,h,c,opt={}){
+ const top=z0+h;
+ const Lt=P(x0,y0,top),Bt=P(x1,y0,top),Rt=P(x1,y1,top),Tt=P(x0,y1,top);
+ const Lb=P(x0,y0,z0),Bb=P(x1,y0,z0),Rb=P(x1,y1,z0);
+ const lc=shade(c,.86),rc=shade(c,.66),tc=opt.roof||shade(c,1.12);
+ if(z0===0&&!MASK&&!IDM&&h>3){cx.save();cx.fillStyle='#000';for(const [e,al] of[[.16,.12],[.09,.16],[.04,.2]]){cx.globalAlpha=al;cx.beginPath();[P(x0-e,y0-e,0),P(x1+e,y0-e,0),P(x1+e,y1+e,0),P(x0-e,y1+e,0)].forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fill()}cx.restore()}
+ const tall=Math.min(1,h/60);
+ poly([Lt,Bt,Bb,Lb],{a:shade(lc,1.05+.08*tall),b:shade(lc,.62)});poly([Bt,Rt,Rb,Bb],{a:shade(rc,1.02+.06*tall),b:shade(rc,.55)});poly([Lt,Tt,Rt,Bt],{a:shade(tc,1.08),b:shade(tc,.9)});
+ if(!MASK&&!IDM){line(Lt,Bt,shade(tc,1.3),1/3);line(Bt,Rt,shade(tc,1.15),1/3);line(Bt,Bb,shade(c,1.2),1/3)}
+ if(MASK)return{top,Lt,Bt,Rt,Tt};
+ const big=(x1-x0)>.25&&(y1-y0)>.25;
+ if(big){const ix=(x1-x0)*.08,iy=(y1-y0)*.08;poly(quad(x0+ix,y0+iy,x1-ix,y1-iy,top),shade(tc,.86))}
+ if(opt.win&&h>8){
+  line(Lt,Bt,shade(c,1.25),2/3);line(Bt,Rt,shade(c,.8),2/3);line(P(x0,y0,top-1),P(x1,y0,top-1),shade(c,.7),1/3);line(P(x1,y0,top-1),P(x1,y1,top-1),shade(c,.5),1/3);
+  const r=rng(opt.seed||1),lit=(opt.lit||.12)*2.2;
+  const wl=shade(c,.4),wr=shade(c,.34),fl=shade(c,.72),frL=shade(c,1.08),frR=shade(c,.82);
+  const nL=Math.max(1,Math.round((x1-x0)*W/1.7)),nR=Math.max(1,Math.round((y1-y0)*W/1.7));const ww=2/3,mul=shade(c,.6);let fl_=0;
+  const shop=z0===0&&h>12&&big;
+  const startZ=shop?z0+6:z0+4;
+  for(let z=startZ;z<top-2.5;z+=4){
+   fl_++;const band=fl_%5===0;line(P(x0,y0,z+.25),P(x1,y0,z+.25),band?shade(c,1.18):fl,band?2/3:1/3);line(P(x1,y0,z+.25),P(x1,y1,z+.25),band?shade(c,.78):shade(c,.55),band?2/3:1/3);
+   for(let i=0;i<nL;i++){const t=(i+.5)/nL,p=P(x0+(x1-x0)*t,y0,z+2.5);const L=r()<lit;rect(p[0]-1/3,p[1]-1/3,ww+2/3,1/3,frL);rect(p[0],p[1],ww,5/3,L?'#f0c860':wl);if(L){rect(p[0],p[1]+1,ww,2/3,'#d8a848');rect(p[0],p[1]+2/3,ww,1/3,'#a88438')}else rect(p[0],p[1],ww,1/3,shade(c,.52));rect(p[0]-1/3,p[1]+5/3,ww+2/3,1/3,shade(c,1.2))}
+   for(let i=0;i<nR;i++){const t=(i+.5)/nR,p=P(x1,y0+(y1-y0)*t,z+2.5);const L=r()<lit*.7;rect(p[0]-1/3,p[1]-1/3,ww+2/3,1/3,frR);rect(p[0],p[1],ww,5/3,L?'#d8a848':wr);if(L)rect(p[0],p[1]+2/3,ww,1/3,'#987428');rect(p[0]-1/3,p[1]+5/3,ww+2/3,1/3,shade(c,.9))}
+  }
+  if(opt.deco){
+   for(let i=0;i<=nL;i+=3){const t=i/nL;line(P(x0+(x1-x0)*t,y0,z0+1),P(x0+(x1-x0)*t,y0,top-1),shade(c,1.15),.5)}
+   for(let i=0;i<=nR;i+=3){const t=i/nR;line(P(x1,y0+(y1-y0)*t,z0+1),P(x1,y0+(y1-y0)*t,top-1),shade(c,.85),.5)}
+  }
+  if(shop){
+   poly([P(x0,y0,5),P(x1,y0,5),P(x1,y0,0),P(x0,y0,0)],shade(c,.5));poly([P(x1,y0,5),P(x1,y1,5),P(x1,y1,0),P(x1,y0,0)],shade(c,.42));
+   for(let i=0;i<nL;i+=2){const t=(i+.5)/nL,p=P(x0+(x1-x0)*t,y0,3.2);rect(p[0],p[1],1.5,2,r()<.6?'#f0c860':'#3a3226')}
+   for(let i=0;i<nR;i+=2){const t=(i+.5)/nR,p=P(x1,y0+(y1-y0)*t,3.2);rect(p[0],p[1],1.5,2,r()<.5?'#d8a848':'#2e2820')}
+   const aw=['#8a2a22','#2a5a3a','#c8b898','#2a3a6a'][Math.floor(r()*4)];line(P(x0,y0,5.2),P(x1,y0,5.2),aw,1);line(P(x1,y0,5.2),P(x1,y1,5.2),shade(aw,.8),1);
+  }
+ }
+ line(Lt,Bt,shade(c,1.22),.6);line(Bt,Rt,shade(c,.9),.6);
+ return{top,Lt,Bt,Rt,Tt};
+}
+function waterTower(gx,gy,z){const p=P(gx,gy,z);rect(p[0]-2,p[1]-2,1,3,'#3a2e26');rect(p[0]+2,p[1]-2,1,3,'#3a2e26');rect(p[0]-2,p[1]-7,5,5,'#7a5a3e');rect(p[0]-2,p[1]-7,2,5,'#9a7450');rect(p[0]-1,p[1]-9,3,2,'#5a4a3e');rect(p[0],p[1]-10,1,1,'#5a4a3e')}
+function roofBits(x0,y0,x1,y1,z,r){
+ if(r()<.45)waterTower(x0+(x1-x0)*(.3+r()*.4),y0+(y1-y0)*(.3+r()*.4),z);
+ if(r()<.6){const gx=x0+(x1-x0)*(.2+r()*.5),gy=y0+(y1-y0)*(.2+r()*.5);box(gx,gy,gx+.1,gy+.08,z,2,'#8e8c88')}
+ if(r()<.4){const gx=x0+(x1-x0)*(.55+r()*.2),gy=y0+(y1-y0)*(.15+r()*.2);box(gx,gy,gx+.12,gy+.07,z,1,'#5a6070',{roof:'#8fa8c0'})}
+ if(r()<.3){const gx=x0+(x1-x0)*.75,gy=y0+(y1-y0)*.7;box(gx,gy,gx+.05,gy+.05,z,6,'#6a5048');if(!MASK)SMOKE_SRC.push(P(gx+.025,gy+.025,z+6))}
+ if(r()<.18){const p=P(x0+(x1-x0)*.5,y0+(y1-y0)*.5,z);if(!MASK){rect(p[0],p[1]-12,.5,12,'#8e8c88');LIGHTS.push({x:p[0],y:p[1]-12,c:'#f06a6a',r:4,blink:true})}}
+}
+// ---------- world layout ----------
+const SHORES=[];
+for(let gy=-8;gy<38;gy++)for(let gx=-13;gx<=-6;gx++)SHORES.push({x:gx,y:gy,s:'nj'});
+for(let gy=-9;gy<36;gy++)for(let gx=14;gx<=21;gx++)if(!(gy<-3&&gx<16))SHORES.push({x:gx,y:gy,s:'bk'});
+const isLand=(x,y)=>!!districtAt(x,y);
+const DPAL={fidi:['#c8bba0','#a8a49c','#8e8a84','#b9a98a'],midtown:['#d2c6a8','#9a5a44','#7d8a96','#b8ad94'],times:['#a65a40','#c8a878','#6e7a8a','#9a6a52'],
+ village:['#9a5a44','#c8b898','#8e4a3a','#b07a5a'],les:['#8e4a3a','#a65a40','#6e4a3a','#9a6a52'],hells:['#7a5a48','#6e5a50','#8e6a52','#5a4a40'],
+ harlem:['#8e4a3a','#7a4e40','#a87a5a','#6e4a3a'],park:['#888']};
+function drawStatic(){
+ for(const mode of[false,true,'id']){
+  MASK=!!mode;IDM=mode==='id';CURID='#000000';const ctx=(mode==='id'?idmap:mode?mask:city).getContext('2d');cx=ctx;cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,city.width,city.height);cx.setTransform(RS,0,0,RS,0,0);if(!MASK){LIGHTS.length=0;SMOKE_SRC.length=0}
+  // shores (New Jersey / Brooklyn)
+  if(!MASK){
+   const sh=[...SHORES].sort((a,b)=>(a.x-a.y)-(b.x-b.y)||(a.x+a.y)-(b.x+b.y));
+   for(const t of sh){poly(quad(t.x,t.y,t.x+1,t.y+1,0),(t.x+t.y)%2?'#4e5054':'#545659');}
+   for(const t of sh){const r=rng(t.x*97+t.y*13+7);
+    const edge=(t.s==='nj'&&t.x===-6)||(t.s==='bk'&&t.x===14);
+    if(edge&&r()<.35){box(t.x+(t.s==='nj'?1:-.6),t.y+.3,t.x+(t.s==='nj'?1.6:0),t.y+.6,0,1,'#6e5a48')}// piers
+    if(r()<.6){const c=['#7a6058','#6e6a66','#86807a','#625e5c'][Math.floor(r()*4)];box(t.x+.22,t.y+.22,t.x+.78,t.y+.78,0,3+Math.floor(r()*8),c,{win:true,seed:t.x*31+t.y,lit:.04})}
+   }
+  }
+  const order=[...TILES].sort((a,b)=>(a.x-a.y)-(b.x-b.y)||(a.x+a.y)-(b.x+b.y));
+  // ground: asphalt, sidewalks, lane marks
+  for(const t of order){CURID=DIDX[t.d];
+   if(t.d==='park'){poly(quad(t.x,t.y,t.x+1,t.y+1,0),(t.x+t.y)%2?'#6b8f4e':'#64884a');continue}
+   if(SPR.ground&&!MASK&&!IDM)continue; // street ground comes from sprites/ground.png
+   poly(quad(t.x,t.y,t.x+1,t.y+1,0),'#5a5a5e',true);
+   const side=mix('#a8a298','#5fd4e0',Math.min(.3,S.c.kontrolle/100*.3));
+   poly(quad(t.x+.13,t.y+.13,t.x+.87,t.y+.87,0),side,true);
+  }
+  // Central Park ground sprite (sprites/park.png, 288x144, drawn 1:1 over park tiles gx 1-9 / gy 13-20);
+  // drawn right after the ground so park lamps, the shore wall and the rift glow still go on top
+  const PARK_SPR=SPR.park&&!MASK&&!IDM,GROUND_SPR=SPR.ground&&!MASK&&!IDM;
+  // street ground sprite (tools/ground_sprite.py, 692x352, origin gx=gy=0 at (4,252)); Control tints the sidewalks cyan
+  if(GROUND_SPR){const sm=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=false;const g=SPR.ground.c;cx.drawImage(g,OX-4,OY-252,g.width,g.height);
+   const tint=Math.min(.3,S.c.kontrolle/100*.3);if(SPR.ground_side&&tint>0){if(!SPR.ground_side.cy){const k=document.createElement('canvas');k.width=g.width;k.height=g.height;const kc=k.getContext('2d');kc.drawImage(SPR.ground_side.c,0,0);kc.globalCompositeOperation='source-in';kc.fillStyle=night('#5fd4e0');kc.fillRect(0,0,k.width,k.height);SPR.ground_side.cy=k}
+    cx.globalAlpha=tint;cx.drawImage(SPR.ground_side.cy,OX-4,OY-252,g.width,g.height);cx.globalAlpha=1}
+   cx.imageSmoothingEnabled=sm}
+  if(PARK_SPR){const sm=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=false;cx.drawImage(SPR.park.c,OX+265,OY-181,SPR.park.c.width,SPR.park.c.height);cx.imageSmoothingEnabled=sm}
+  if(!MASK){ // gritty ground texture (cracks, dirt, grass tufts)
+   for(const t of order){if(PARK_SPR&&t.d==='park'||GROUND_SPR&&t.d!=='park')continue;const r=rng(t.x*7919+t.y*104729);const n=t.d==='park'?18:10;
+    for(let i=0;i<n;i++){const p=P(t.x+r(),t.y+r());const c=t.d==='park'?(r()<.5?'#4f7a3e':'#3e6432'):(r()<.5?'#4a4a4e':'#8a857c');rect(p[0],p[1],1+(r()<.3?1:0),1,c)}}
+   for(const t of SHORES){const r=rng(t.x*31+t.y*977);for(let i=0;i<6;i++){const p=P(t.x+r(),t.y+r());rect(p[0],p[1],1,1,r()<.5?'#5a5c60':'#3e4044')}}
+  }
+  if(!MASK){
+   // yellow centre dashes on avenues & streets
+   if(!GROUND_SPR)for(const t of TILES){if(t.d==='park')continue;
+    for(const [ax,ay,bx,by,nx,ny] of[[t.x,t.y,t.x,t.y+1,-1,0],[t.x,t.y,t.x+1,t.y,0,-1]]){
+     if(!isLand(t.x+nx,t.y+ny)||districtAt(t.x+nx,t.y+ny)==='park')continue;
+     for(let k=.15;k<.9;k+=.3){const p=P(ax+(bx-ax)*k,ay+(by-ay)*k);rect(p[0],p[1],2,1,'#d8c060')}
+    }}
+   // street lamps on block corners
+   for(const t of TILES){if(t.d==='park'||(t.x+t.y)%2)continue;const p=P(t.x+.12,t.y+.12);rect(p[0],p[1]-5,.5,5,'#2a2a2e');rect(p[0]-.5,p[1]-5.5,1.5,.5,'#2a2a2e');rect(p[0]-.5,p[1]-5,1,1,'#ffd27a');LIGHTS.push({x:p[0],y:p[1]-5,c:'#ffd27a',r:7,lamp:true,gx:p[0],gy:p[1]})}
+   for(const t of TILES){if(t.d!=='park'||(t.x*3+t.y)%3)continue;const p=P(t.x+.5,t.y+.5);rect(p[0],p[1]-4,.5,4,'#2a2a2e');rect(p[0]-.5,p[1]-4.5,1,1,'#ffe8a8');LIGHTS.push({x:p[0],y:p[1]-4,c:'#ffe8a8',r:6,lamp:true,gx:p[0],gy:p[1]})}
+   // waterfront wall (not with the ground sprite: its coast is rounded and has its own surf)
+   if(!(SPR.ground&&!IDM))for(const t of TILES)for(const [dx,dy,a,b] of[[0,-1,P(t.x,t.y),P(t.x+1,t.y)],[1,0,P(t.x+1,t.y),P(t.x+1,t.y+1)],[-1,0,P(t.x,t.y),P(t.x,t.y+1)],[0,1,P(t.x,t.y+1),P(t.x+1,t.y+1)]]){if(!isLand(t.x+dx,t.y+dy)){line(a,b,'#3a3a3e',1.5);line([a[0],a[1]+1.5],[b[0],b[1]+1.5],'#2a2a2e',1)}}
+   // rift glow (pixel rings)
+   const rc=P(4.5,16.5);const k=.5+S.inst/120;
+   [['#7a5aa8',96,46],['#8a6cc8',70,34],['#a080e0',46,22],['#c0a0f0',24,11]].forEach(([c,rx,ry],i)=>{cx.globalAlpha=Math.min(1,(.18+i*.08)*k);cx.fillStyle=hex(c);cx.beginPath();cx.ellipse(rc[0],rc[1],rx,ry,0,0,7);cx.fill()});cx.globalAlpha=1;
+  }
+  // buildings, facilities, landmarks
+  const slotMap={};for(const k in S.slotTiles)S.slotTiles[k].forEach(([x,y],i)=>slotMap[x+','+y]={k,i});
+  for(const t of order){
+   CURID=DIDX[t.d];const key=t.x+','+t.y;const a=ANCHORS.find(a=>a.pos[0]===t.x&&a.pos[1]===t.y);const sl=slotMap[key];const r=rng(t.x*131+t.y*17);
+   if(sl){const f=S.slots[sl.k][sl.i];
+    if(f){drawFacilityGlow(t,f);continue}
+    else if(!MASK){const q=quad(t.x+.25,t.y+.25,t.x+.75,t.y+.75,0);for(let i=0;i<4;i++){const p=q[i];rect(p[0]-1,p[1]-1,2,2,'#e0a43a')}}
+   }
+   if(a){drawLandmark(t,a);continue}
+   if(t.d==='park'){if(SPR.park&&!MASK&&!IDM)continue;
+    for(let i=0;i<3;i++){const gx=t.x+.15+r()*.7,gy=t.y+.15+r()*.7;const p=P(gx,gy);
+     if(!MASK){rect(p[0]-3,p[1]-1,7,2,'#4a6a3a');}rect(p[0],p[1]-4,1,4,'#5a4030');rect(p[0]-3,p[1]-9,7,5,'#3f6e3a');rect(p[0]-2,p[1]-11,5,2,'#57884a');rect(p[0]-1,p[1]-9,2,2,'#6fa05a')}
+    continue}
+   const [hmin,hmax]=DISTRICTS[t.d].h;const hgt=S.heights[key];if(!hgt)continue;
+   const pal=DPAL[t.d];const c=pal[Math.floor(r()*pal.length)];
+   const s=.22,x0=t.x+s,y0=t.y+s,x1=t.x+1-s,y1=t.y+1-s;
+   if(hgt>55&&r()<.7){ // art deco setbacks
+    const h1=hgt*.6,h2=hgt*.25,h3=hgt*.15;
+    box(x0,y0,x1,y1,0,h1,c,{win:true,deco:true,seed:t.x*7+t.y,lit:.1});
+    box(x0+.06,y0+.06,x1-.06,y1-.06,h1,h2,c,{win:true,deco:true,seed:t.x*9+t.y});
+    const b=box(x0+.12,y0+.12,x1-.12,y1-.12,h1+h2,h3,c,{win:true,seed:t.x*5+t.y});
+    if(r()<.5){const p=P(t.x+.5,t.y+.5,b.top);rect(p[0],p[1]-8,1,8,'#8e8c88')}
+   } else if(hgt<=BLD_MAXH&&!MASK&&!IDM&&bldPick(t.d,hgt,()=>.5)){ // low-rise block: one of the district's 5 building sprites
+    const p=P(t.x+.5,t.y+.5),bn=bldPick(t.d,hgt,r),v=r();cx.filter=`brightness(${(.84+v*.22).toFixed(2)})`; // per-block variation
+    spr(cx,bn,p[0],p[1]+6,((BLD_W[t.d]||28)-2+Math.round(r()*4))*(SPR[bn].c.width>=128&&!SPR[bn].plate?.86:1),v<.5);cx.filter='none';
+   } else {
+    const b=box(x0,y0,x1,y1,0,hgt,c,{win:true,seed:t.x*3+t.y*11,lit:.08,roof:shade(c,.95)});
+    roofBits(x0,y0,x1,y1,b.top,r);
+    if(t.d==='times'&&r()<.6){const p=P(x0+.1,y0,hgt*.55);const nc=['#f06a6a','#5fd4e0','#e0a43a','#d070e0'][Math.floor(r()*4)];rect(p[0],p[1]-3,8,5,'#2a2a2e');rect(p[0]+1,p[1]-2,6,3,nc);if(!MASK)LIGHTS.push({x:p[0]+4,y:p[1],c:nc,r:10,neon:true})}
+   }
+  }
+  CURID='#000000';
+  // Brooklyn Bridge
+  {const b1=P(10,3.5,10),b2=P(14,3.5,10);
+   if(SPR.bridge&&!MASK&&!IDM){ // sprite (tools/bridge_sketch.py): 192x160 drawn at half size, origin logical (OX+246,OY+26)
+    const sm=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=false;cx.drawImage(SPR.bridge.c,OX+246,OY+26,96,80);cx.imageSmoothingEnabled=sm;
+    if(S.anchors.brooklyn!==undefined){const cc='#5fd4e0';line(P(11,3.5,30),P(13,3.5,30),cc,1);line(P(10,3.5,10),P(11,3.5,30),cc,1);line(P(13,3.5,30),P(14,3.5,10),cc,1);LIGHTS.push({x:P(12,3.5,20)[0],y:P(12,3.5,20)[1],c:cc,r:18})}}
+   else{
+   for(const x of[11,13]){const p=P(x,3.5);box(x-.08,3.42,x+.08,3.58,0,26,'#9a8e7a')}
+   if(!MASK){line(P(10,3.5,8),P(14,3.5,8),'#6a6258',2);const a=S.anchors.brooklyn!==undefined;
+    const cc=a?'#5fd4e0':'#c8c0b0';line(P(11,3.5,34),P(13,3.5,34),cc,1);line(P(10,3.5,10),P(11,3.5,34),cc,1);line(P(13,3.5,34),P(14,3.5,10),cc,1)}}}
+  // Statue of Liberty on Liberty Island in the harbour
+  drawLiberty();
+ }
+ MASK=false;IDM=false;cx=city.getContext('2d');
+ // smooth rendering (no palette quantization) + painted brush texture
+ {const c=city.getContext('2d');c.save();c.setTransform(1,0,0,1,0,0);c.globalCompositeOperation='source-atop';c.drawImage(paintTex(),0,0,city.width,city.height);c.restore()}
+ buildLibOver();
+ buildWinGlow();
+ buildDim();
+}
+const LIB={gx:1.6,gy:-3.6};let LIB_P=null,LIB_LAMPS=[];
+function drawLiberty(){
+ const {gx,gy}=LIB;const act=S.anchors.liberty!==undefined;
+ // island with grass, paths and the star-shaped Fort Wood
+ if(!MASK){poly(quad(gx-1.1,gy-1.1,gx+1.1,gy+1.1,0),'#4a6a3a');poly(quad(gx-1,gy-1,gx+1,gy+1,0),'#5a7a44');
+  const r=rng(77);for(let i=0;i<40;i++){const p=P(gx-1+r()*2,gy-1+r()*2);rect(p[0],p[1],.5,.5,r()<.5?'#4a6a3a':'#6a8a50')}
+  // shoreline wall
+  const q=quad(gx-1.1,gy-1.1,gx+1.1,gy+1.1,0);for(let i=0;i<4;i++)line(q[i],q[(i+1)%4],'#3a3a3e',1);}
+ // eleven-pointed star fort (approximated as an 8-point star)
+ if(!MASK){const c=P(gx,gy);const pts=[];for(let i=0;i<16;i++){const a=i/16*Math.PI*2,rr=i%2?.42:.62;pts.push(P(gx+Math.cos(a)*rr,gy+Math.sin(a)*rr))}poly(pts,'#a89878');
+  const pts2=pts.map(p=>[p[0],p[1]-3]);poly(pts2,'#c8b89a')}
+ if(SPR.liberty){const g0=P(gx,gy,3);const r=spr(cx,'liberty',g0[0],g0[1]+12,44,false,sprMode());if(!r)return;if(!MASK)LIB_RECT=r.d;
+  LIB_P=[g0[0],r.y+r.h*.45];
+  if(!MASK){LIGHTS.push({x:r.top[0],y:r.top[1]+1,c:act?'#5fd4e0':'#ffd27a',r:act?20:14,neon:true});LIGHTS.push({x:g0[0],y:r.y+r.h*.35,c:'#c8e8dc',r:22})}
+  LIB_LAMPS=[[gx-.55,gy],[gx+.55,gy],[gx,gy-.55],[gx,gy+.55]].map(([a,c])=>P(a,c,3));return}
+ // granite pedestal
+ const b=box(gx-.22,gy-.22,gx+.22,gy+.22,3,26,'#a89878',{roof:'#c8b89a'});
+ if(!MASK){for(let z=6;z<27;z+=6){line(P(gx-.22,gy-.22,z+3),P(gx+.22,gy-.22,z+3),'#8a7a60',.5)}
+  const d=P(gx,gy-.22,14);rect(d[0]-1,d[1]-3,2,3,'#3a3226')}
+ // the statue (copper patina, floodlit)
+ const top=P(gx,gy,29);const x=top[0],y=top[1];LIB_P=[x,y];
+ const L='#a8d4c0',M='#7fb8a0',D='#558a74',DD='#3f6e5c';
+ // robe: widening towards the bottom
+ for(let i=0;i<26;i++){const yy=y-i*.5*2;const w=Math.round((5-i*.1)*2)/2;rect(x-w/2,yy-1,w*.45,1,L);rect(x-w/2+w*.45,yy-1,w*.35,1,M);rect(x+w*.3-.5,yy-1,w*.25,1,D)}
+ const sh=y-27;rect(x-2,sh,4,2,M);rect(x-2,sh,1.5,2,L);rect(x+1,sh,1,2,D);           // shoulders
+ rect(x-1,sh-3,2,3,M);rect(x-1,sh-3,1,3,L);                                            // head
+ for(const [dx,dy] of[[-2,-4],[-1,-5],[0,-5.5],[1,-5],[2,-4],[2.5,-3],[-2.5,-3]])rect(x+dx,sh+dy,.5,1,L); // crown rays
+ rect(x+1.5,sh-11,1,11,M);rect(x+1.5,sh-11,.5,11,L);                                   // raised right arm
+ rect(x+1,sh-13,2,2,DD);rect(x+1.5,sh-15,1,2,'#ffd27a');rect(x+1,sh-14.5,2,1,'#f0c860'); // torch
+ rect(x-3,sh+2,1.5,4,D);rect(x-3,sh+2,1.5,.5,L);                                        // tablet
+ if(!MASK){LIGHTS.push({x:x+2,y:sh-14,c:act?'#5fd4e0':'#ffd27a',r:act?20:14,neon:true});LIGHTS.push({x,y:y-12,c:'#c8e8dc',r:22})}
+ LIB_LAMPS=[[gx-.55,gy],[gx+.55,gy],[gx,gy-.55],[gx,gy+.55]].map(([a,c])=>P(a,c,3));
+}
+const WGLOW=mk();
+function buildWinGlow(){ // lit windows and neon spill warm light onto the facades around them
+ const src=city.getContext('2d').getImageData(0,0,city.width,city.height).data;const t=mk(),tc=t.getContext('2d');const im=tc.createImageData(t.width,t.height),d=im.data;
+ for(let i=0;i<src.length;i+=4){const r=src[i],g=src[i+1],b=src[i+2];if(src[i+3]>200&&r>170&&r+g>320&&r-b>40){d[i]=r;d[i+1]=g*.82;d[i+2]=b*.5;d[i+3]=255}}
+ tc.putImageData(im,0,0);const w=WGLOW.getContext('2d');w.clearRect(0,0,WGLOW.width,WGLOW.height);w.filter='blur('+(2.5*RS)+'px)';w.drawImage(t,0,0);w.filter='blur('+(.8*RS)+'px)';w.globalAlpha=.7;w.drawImage(t,0,0);w.globalAlpha=1;w.filter='none';
+}
+let PAINT=null;
+function paintTex(){if(PAINT)return PAINT;PAINT=mk(LW*2,LH*2);const x=PAINT.getContext('2d');const r=rng(4242);x.lineCap='round';
+ const n=Math.round(PAINT.width*PAINT.height/90);
+ for(let i=0;i<n;i++){const px=r()*PAINT.width,py=r()*PAINT.height,len=(2+r()*7)*2/3,a=-.45+r()*.25,lt=r()<.5;
+  x.strokeStyle=lt?'rgba(255,245,225,'+(.025+r()*.05)+')':'rgba(0,0,10,'+(.04+r()*.07)+')';x.lineWidth=(.6+r()*1.4)*2/3;
+  x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*len,py+Math.sin(a)*len);x.stroke()}
+ // paper grain
+ const im=x.getImageData(0,0,PAINT.width,PAINT.height),d=im.data;for(let i=0;i<d.length;i+=4){if(r()<.18){const v=r()<.5?255:0;const al=6+r()*10;const a0=d[i+3]/255,a1=al/255,ao=a1+a0*(1-a1);if(ao>0){d[i]=(v*a1+d[i]*a0*(1-a1))/ao;d[i+1]=(v*a1+d[i+1]*a0*(1-a1))/ao;d[i+2]=(v*a1+d[i+2]*a0*(1-a1))/ao;d[i+3]=ao*255}}}
+ x.putImageData(im,0,0);return PAINT}
+function buildDim(){ // mask of everything that is NOT the selected district
+ const id=idmap.getContext('2d').getImageData(0,0,idmap.width,idmap.height).data;const dc=dimmask.getContext('2d');const im=dc.createImageData(dimmask.width,dimmask.height),d=im.data;
+ if(!S.sel)return;const sel=parseInt(DIDX[S.sel].slice(1,3),16);
+ for(let i=0;i<id.length;i+=4){const land=id[i+3]>100&&id[i]>=12;d[i+3]=land&&Math.abs(id[i]-sel)>=6?255:0}
+ dc.putImageData(im,0,0);
+ dc.globalCompositeOperation='source-in';dc.fillStyle='#8c8c8c';dc.fillRect(0,0,dimmask.width,dimmask.height);dc.globalCompositeOperation='source-over';
+}
+// Facilities get a soft halo in their own colour so they stand out from civilian buildings.
+// The facility is drawn onto a small scratch canvas first, then composited with a coloured shadow blur.
+const FGLOW=document.createElement('canvas');
+function drawFacilityGlow(t,f){
+ if(MASK||IDM){drawFacility(t,f);return}
+ const p=P(t.x+.5,t.y+.5),ox=Math.floor(p[0]-36),oy=Math.floor(p[1]-90),w=72,h=110;
+ FGLOW.width=w*RS;FGLOW.height=h*RS;const g=FGLOW.getContext('2d');g.setTransform(RS,0,0,RS,-ox*RS,-oy*RS);
+ const main=cx;cx=g;try{drawFacility(t,f)}finally{cx=main}
+ const on=!(f.bt>0)&&online(f),col=FAC[f.t].col;
+ cx.save();cx.setTransform(1,0,0,1,0,0);cx.shadowColor=col;
+ cx.globalAlpha=on?1:.55;cx.shadowBlur=9*RS;cx.drawImage(FGLOW,ox*RS,oy*RS);cx.drawImage(FGLOW,ox*RS,oy*RS); // wide soft halo
+ cx.shadowBlur=3*RS;cx.drawImage(FGLOW,ox*RS,oy*RS);cx.drawImage(FGLOW,ox*RS,oy*RS);                          // bright rim
+ cx.shadowBlur=0;cx.globalAlpha=1;cx.drawImage(FGLOW,ox*RS,oy*RS);cx.restore();  // the facility itself on top
+ LIGHTS.push({x:p[0],y:p[1]-14,c:col,r:on?22:12});  // coloured light that also shines over buildings in front
+}
+function drawFacility(t,f){
+ if(f.bt>0){const x0=t.x+.18,y0=t.y+.18,x1=t.x+.82,y1=t.y+.82,h=4+6/(f.bt+1);box(x0,y0,x1,y1,0,h,'#6a655e');const H=h+10;for(const [a,b] of[[x0,y0],[x1,y0],[x0,y1],[x1,y1]])line(P(a,b,0),P(a,b,H),'#8a7a5a',1);line(P(x0,y0,H),P(x1,y0,H),'#8a7a5a',1);line(P(x1,y0,H),P(x1,y1,H),'#8a7a5a',1);const q=P(x1,y0,H);line(q,P(x1,y0,H+12),'#c08a3a',1);line(P(x1,y0,H+12),P(x0+.1,y0,H+12),'#c08a3a',1);if(!MASK)LIGHTS.push({x:q[0],y:q[1]-12,c:'#f0a040',r:5,blink:true});return}
+ const F=FAC[f.t];const on=online(f);const x0=t.x+.18,y0=t.y+.18,x1=t.x+.82,y1=t.y+.82;const p=P(t.x+.5,t.y+.5);
+ const dim=c=>on?c:mix(c,'#5c6168',.6);
+ const SN={lab:'lab',drill:'drill',gen:'gen'}[f.t];
+ if(SN&&SPR[SN]){const W0={lab:34,drill:24,gen:34}[SN];const md=sprMode();
+  if(!on&&!md)cx.filter='grayscale(.8) brightness(.6)';
+  const r=spr(cx,SN,p[0],p[1]+7,W0,false,md);cx.filter='none';
+  if(!MASK&&on){if(SN==='lab')LIGHTS.push({x:r.top[0],y:r.top[1]+2,c:'#b48ef0',r:12});
+   if(SN==='drill')LIGHTS.push({x:r.top[0],y:r.top[1]+3,c:'#5fd4e0',r:9});
+   if(SN==='gen')SMOKE_SRC.push([r.top[0],r.top[1]],[r.top[0],r.top[1]])}
+  if(!on&&!MASK){const q=P(t.x+.5,t.y+.5,44);rect(q[0]-2,q[1]-2,4,4,'#f06a6a')}
+  return}
+ if(f.t==='gen'){box(x0,y0,x1,y1,0,14,dim('#7a5a48'),{win:true,seed:3});box(x1-.18,y0+.05,x1-.06,y0+.17,14,16,dim('#5a4a40'));if(on&&!MASK)SMOKE_SRC.push(P(x1-.12,y0+.11,30),P(x1-.12,y0+.11,30));if(on&&!MASK){const q=P(x1-.12,y0+.11,30);rect(q[0]-1,q[1]-3,3,2,'#b8b4ac');rect(q[0]+1,q[1]-6,3,2,'#d0ccc4')}}
+ else if(f.t==='tesla'){if(on&&!MASK){const q=P(t.x+.5,t.y+.5,30);LIGHTS.push({x:q[0],y:q[1]-3,c:'#ffd27a',r:14,neon:true})}box(x0+.1,y0+.1,x1-.1,y1-.1,0,8,dim('#5a6070'));box(t.x+.42,t.y+.42,t.x+.58,t.y+.58,8,20,dim('#8a7a50'));const q=P(t.x+.5,t.y+.5,30);rect(q[0]-3,q[1]-3,7,4,dim('#c0a040'));if(on)rect(q[0]-1,q[1]-6,3,2,'#ffd27a')}
+ else if(f.t==='lab'){const b=box(x0,y0,x1,y1,0,12,dim('#c8c0b0'),{win:true,seed:5,lit:.4});const q=P(t.x+.5,t.y+.5,b.top);if(on&&!MASK)LIGHTS.push({x:q[0],y:q[1]-4,c:'#b48ef0',r:12});rect(q[0]-4,q[1]-4,9,4,dim('#8a6cc8'));rect(q[0]-2,q[1]-6,5,2,dim('#b48ef0'))}
+ else if(f.t==='sender'){if(on&&!MASK){const q=P(t.x+.5,t.y+.5,8);LIGHTS.push({x:q[0],y:q[1]-34,c:'#f06a6a',r:5,blink:true})}box(x0+.1,y0+.1,x1-.1,y1-.1,0,8,dim('#8e8a84'));const q=P(t.x+.5,t.y+.5,8);for(let i=0;i<30;i+=2){const w=Math.max(1,Math.round((30-i)/8));rect(q[0]-w+((i/2)%2),q[1]-i-2,1,2,dim('#c84a3a'));rect(q[0]+w-((i/2)%2),q[1]-i-2,1,2,dim('#c84a3a'))}rect(q[0],q[1]-36,1,4,dim('#f06a6a'))}
+ else if(f.t==='drill'){if(on&&!MASK){const q=P(t.x+.5,t.y+.5,4);LIGHTS.push({x:q[0],y:q[1]-25,c:'#5fd4e0',r:9})}box(x0+.1,y0+.1,x1-.1,y1-.1,0,4,dim('#5a5a5e'));const q=P(t.x+.5,t.y+.5,4);for(let i=0;i<20;i++){rect(q[0]-Math.round((20-i)/5),q[1]-i,1,1,dim('#3a3a3e'));rect(q[0]+Math.round((20-i)/5),q[1]-i,1,1,dim('#3a3a3e'))}rect(q[0]-2,q[1]-28,5,6,dim('#5fd4e0'));rect(q[0]-1,q[1]-30,3,2,dim('#bff3f8'))}
+ else if(f.t==='stab'){box(x0+.1,y0+.1,x1-.1,y1-.1,0,6,dim('#5a6a5a'));const q=P(t.x+.5,t.y+.5,6);for(let i=0;i<5;i++)rect(q[0]-3,q[1]-3-i*3,7,2,dim(i%2?'#7fd68a':'#4a8a5a'))}
+ else if(f.t==='portal'){if(on&&!MASK){const q=P(t.x+.5,t.y+.5,22);LIGHTS.push({x:q[0],y:q[1],c:'#5fd4e0',r:18})}box(x0,y0,x1,y1,0,4,dim('#4a4f55'));if(!MASK){const q=P(t.x+.5,t.y+.5,22);cx.strokeStyle=hex(dim('#5fd4e0'));cx.lineWidth=2;cx.beginPath();cx.ellipse(q[0],q[1],9,14,0,0,7);cx.stroke();if(on){cx.fillStyle=hex('#1f5a62');cx.beginPath();cx.ellipse(q[0],q[1],6,11,0,0,7);cx.fill()}}else rect(p[0]-10,p[1]-38,20,32)}
+ if(!on&&!MASK){const q=P(t.x+.5,t.y+.5,44);rect(q[0]-2,q[1]-2,4,4,'#f06a6a')}
+}
+function drawLandmark(t,a){
+ const act=S.anchors[a.id]!==undefined;const tint=c=>act?mix(c,'#5fd4e0',.25):c;const x0=t.x+.12,y0=t.y+.12,x1=t.x+.88,y1=t.y+.88;
+ const glow=(z)=>{if(MASK||!S.found[a.id])return;const q=P(t.x+.5,t.y+.5,z);if(act){rect(q[0]-1,q[1]-4,3,3,'#bff3f8');LIGHTS.push({x:q[0],y:q[1]-3,c:'#5fd4e0',r:16})}else LIGHTS.push({x:q[0],y:q[1]-2,c:'#f06a6a',r:4,blink:true})};
+ if(a.id==='esb'){let z=0;[[0,.62,'#c8bfa8'],[.08,.2,'#c8bfa8'],[.16,.12,'#bdb39c'],[.24,.06,'#b0a690']].forEach(([s,f,c])=>{const b=box(x0+s,y0+s,x1-s,y1-s,z,a.h*f*1.15,tint(c),{win:true,deco:true,seed:z+3,lit:.15});z=b.top});const q=P(t.x+.5,t.y+.5,z);rect(q[0],q[1]-18,1,18,'#d8d4cc');glow(z+20)}
+ else if(a.id==='chrysler'){let z=0;const b=box(x0+.08,y0+.08,x1-.08,y1-.08,0,a.h*1.1,tint('#b8b4ac'),{win:true,deco:true,seed:9,lit:.15});z=b.top;for(let i=0;i<5;i++){const s=.14+i*.06;box(t.x+s,t.y+s,t.x+1-s,t.y+1-s,z,5,tint(i%2?'#d8d8d8':'#a8a8a8'));if(!MASK){const q=P(t.x+1-s,t.y+.5,z+2.5);rect(q[0]-1,q[1],2,1,'#f0c860');LIGHTS.push({x:q[0],y:q[1],c:'#f0c860',r:5})}z+=5}const q=P(t.x+.5,t.y+.5,z);rect(q[0],q[1]-16,1,16,'#e8e8e8');glow(z+16)}
+ else if(a.id==='woolworth'){const b=box(x0,y0,x1,y1,0,a.h*.7,tint('#d8d0c0'),{win:true,seed:11});const b2=box(x0+.2,y0+.2,x1-.2,y1-.2,b.top,a.h*.3,tint('#d8d0c0'),{win:true,seed:12,roof:'#5a8a6a'});const q=P(t.x+.5,t.y+.5,b2.top);rect(q[0]-2,q[1]-6,5,6,'#5a8a6a');rect(q[0],q[1]-10,1,4,'#5a8a6a');glow(b2.top+10)}
+ else if(a.id==='flatiron'){const b=box(x0+.1,y0,x1-.1,y1,0,a.h*.9,tint('#c8b490'),{win:true,seed:13});glow(b.top)}
+ else if(a.id==='grand'){const b=box(t.x+.05,t.y+.1,t.x+.95,t.y+.9,0,a.h*.5,tint('#d8ccb0'),{win:false});if(!MASK)for(let i=0;i<3;i++){const p=P(t.x+.2+i*.3,t.y+.1,8);rect(p[0]-1,p[1]-6,3,8,'#4a5a6a')}glow(b.top)}
+ else if(a.id==='wall'){const b=box(x0,y0,x1,y1,0,a.h*.45,tint('#e0d8c8'),{win:false});if(!MASK)for(let i=0;i<5;i++){const p=P(x0+.08+i*.15,y0,2);rect(p[0],p[1]-14,1,14,'#f4f0e8')}const b2=box(x0+.05,y0+.05,x1-.05,y1-.05,b.top,a.h*.35,tint('#c8c0b0'),{win:true,seed:15});glow(b2.top)}
+ else if(a.id==='times'){const b=box(x0+.1,y0+.1,x1-.1,y1-.1,0,a.h*.9,tint('#8e7a6a'),{win:true,seed:17});if(!MASK)for(let i=0;i<3;i++){const p=P(x0+.15,y0+.1+i*.2,10+i*12);const nc=['#f06a6a','#5fd4e0','#ffd27a'][i];rect(p[0]-6,p[1]-4,10,7,'#1e1e22');rect(p[0]-5,p[1]-3,8,5,nc)}glow(b.top)}
+ else if(a.id==='park'){if(!MASK){const q=P(t.x+.5,t.y+.5);rect(q[0]-6,q[1]-3,13,6,'#2c4232');rect(q[0]-3,q[1]-9,7,8,act?'#bff3f8':'#8a6cc8');rect(q[0]-1,q[1]-13,3,4,act?'#ffffff':'#b48ef0')}}
+}
+// palette quantization (snaps anti-aliased edges to the colours actually used)
+function quantize(cv){
+ const c=cv.getContext('2d');const img=c.getImageData(0,0,cv.width,cv.height),d=img.data;
+ const pal=[...USED].map(h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]);const cache=new Map();
+ for(let i=0;i<d.length;i+=4){
+  if(d[i+3]<110){d[i+3]=0;continue}
+  const a=d[i+3]/255;const r=d[i]/a,g=d[i+1]/a,b=d[i+2]/a; // un-premultiply edges over transparency
+  const key=(Math.min(255,r)>>2)<<12|(Math.min(255,g)>>2)<<6|(Math.min(255,b)>>2);let q=cache.get(key);
+  if(!q){let best=1e9;for(const p of pal){const dd=(p[0]-r)**2+(p[1]-g)**2+(p[2]-b)**2;if(dd<best){best=dd;q=p}}cache.set(key,q)}
+  d[i]=q[0];d[i+1]=q[1];d[i+2]=q[2];d[i+3]=255;
+ }
+ c.putImageData(img,0,0);
+}
+// ---------- animation: water, boats, traffic, zeppelins, weather ----------
+const STREETS=[];
+(function(){
+ for(let x=1;x<=10;x++){let run=null;for(let y=0;y<=26;y++){const ok=y<26&&isLand(x-1,y)&&isLand(x,y)&&!(districtAt(x-1,y)==='park'&&districtAt(x,y)==='park');if(ok&&!run)run={ax:'y',c:x,s:y};if(!ok&&run){run.e=y;if(run.e-run.s>1)STREETS.push(run);run=null}}}
+ for(let y=1;y<=25;y++){let run=null;for(let x=0;x<=11;x++){const ok=x<11&&isLand(x,y-1)&&isLand(x,y)&&!(districtAt(x,y-1)==='park'&&districtAt(x,y)==='park');if(ok&&!run)run={ax:'x',c:y,s:x};if(!ok&&run){run.e=x;if(run.e-run.s>1)STREETS.push(run);run=null}}}
+})();
+const CARC=['#c84a3a','#2a2a2e','#e0d8c8','#3a5a8a','#d8b040','#2a5a3a','#5a3a2a'];
+const arng=rng(4242);
+const CARS=Array.from({length:70},()=>newCar());
+function newCar(){const s=STREETS[Math.floor(arng()*STREETS.length)];const dir=arng()<.5?1:-1;return{s,dir,t:s.s+arng()*(s.e-s.s),v:(.012+arng()*.02),c:CARC[Math.floor(arng()*CARC.length)]}}
+const BOATS=[{ax:'y',c:-2.6,t:2,v:.02,k:'tug'},{ax:'y',c:-2,t:18,v:.015,k:'steamer'},{ax:'y',c:12.2,t:5,v:.025,k:'tug'},{ax:'y',c:12.8,t:20,v:-.018,k:'barge'},{ax:'x',c:-5.5,t:2,v:.02,k:'ferry'},{ax:'y',c:-3.2,t:30,v:-.02,k:'tug'}];
+const ZEPS=[{gx:2,gy:-6,z:150,v:-.03},{gx:8,gy:14,z:175,v:-.022},{gx:-2,gy:26,z:160,v:-.026}];
+const PLANES=[{gx:-12,gy:9,z:115,v:.07}];
+const DROPS=Array.from({length:700},()=>({x:arng()*LW,y:arng()*LH,l:4+Math.floor(arng()*4)}));
+function noiseLayer(seed,thr,col,cell){const c=mk(LW*2,LH);const g=c.getContext('2d');const r=rng(seed);const gw=Math.ceil(LW*2/cell)+2,gh=Math.ceil(LH/cell)+2;const v=[];for(let i=0;i<gw*gh;i++)v.push(r());
+ const im=g.createImageData(c.width,c.height),d=im.data;const [R,G,B]=[1,3,5].map(i=>parseInt(col.slice(i,i+2),16));
+ for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++){const fx_=x/cell,fy=y/cell,ix=fx_|0,iy=fy|0,tx=fx_-ix,ty=fy-iy;const s=(a,b)=>v[(b%gh)*gw+(a%gw)];
+  const n=(s(ix,iy)*(1-tx)+s(ix+1,iy)*tx)*(1-ty)+(s(ix,iy+1)*(1-tx)+s(ix+1,iy+1)*tx)*ty;const bay=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5][(y&3)*4+(x&3)]/16;
+  if(n-thr>bay*.35){const i=(y*c.width+x)*4;d[i]=R;d[i+1]=G;d[i+2]=B;d[i+3]=255}}
+ g.putImageData(im,0,0);return c}
+const FOG1=noiseLayer(11,.5,'#5a6068',38),FOG2=noiseLayer(23,.55,'#6e747a',22),CLOUD=noiseLayer(37,.55,'#000000',60);
+let frameN=0,flash=0;
+function pt(gx,gy,z=0){const p=P(gx,gy,z);return[Math.round(p[0]),Math.round(p[1])]}
+// ---- life: pedestrians, trams, smoke ----
+const PEDC=['#2a2a30','#3a3028','#4a3a2a','#2e3440','#4a2a2a','#3a3a3a'];
+const PEDS=Array.from({length:160},()=>newPed());
+function newPed(){const s=STREETS[Math.floor(arng()*STREETS.length)];return{s,side:arng()<.5?-.175:.175,t:s.s+arng()*(s.e-s.s),v:(.0025+arng()*.004)*(arng()<.5?1:-1),c:PEDC[Math.floor(arng()*PEDC.length)],ph:Math.floor(arng()*8)}}
+const TRAMS=[];{const av=STREETS.filter(s=>s.ax==='y'&&(s.c===3||s.c===7));av.forEach((s,i)=>{TRAMS.push({s,t:s.s+1,v:.01,off:.06});TRAMS.push({s,t:s.e-2,v:-.01,off:-.06})})}
+const PUFFS=[];
+// ---- glow sprites ----
+let FXHI=true;try{FXHI=localStorage.getItem('singularity-fx')!=='low'}catch(e){}
+const GLOWS=new Map();const MOTES=[];let GLITCH=0,GL=null;
+const EDGEGREEN=(()=>{const c=document.createElement('canvas');c.width=380;c.height=300;const x=c.getContext('2d');const gr=x.createRadialGradient(190,150,90,190,150,250);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(.7,'rgba(40,160,90,.15)');gr.addColorStop(1,'rgba(120,80,220,.55)');x.fillStyle=gr;x.fillRect(0,0,380,300);return c})();
+const BLOOM=document.createElement('canvas');BLOOM.width=Math.round(LW/2);BLOOM.height=Math.round(LH/2);
+const HAZE=(()=>{const x=document.createElement('canvas').getContext('2d');const gr=x.createLinearGradient(0,0,0,LH);gr.addColorStop(0,'rgba(60,80,105,.30)');gr.addColorStop(.35,'rgba(40,55,75,.10)');gr.addColorStop(.6,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,8,.18)');return gr})();
+function glowSprite(c){let g=GLOWS.get(c);if(g)return g;g=document.createElement('canvas');g.width=g.height=64;const x=g.getContext('2d');const gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,c+'cc');gr.addColorStop(.25,c+'55');gr.addColorStop(1,c+'00');x.fillStyle=gr;x.fillRect(0,0,64,64);GLOWS.set(c,g);return g}
+// ---- camera ----
+const cam={z:1,x:cv.width/2,y:cv.height/2};
+function view(){const sw=cv.width/cam.z,sh=cv.height/cam.z;cam.x=Math.max(sw/2,Math.min(cv.width-sw/2,cam.x));cam.y=Math.max(sh/2,Math.min(cv.height-sh/2,cam.y));return{sx:cam.x-sw/2,sy:cam.y-sh/2,sw,sh}}
+function toC(p,v){return[(p[0]*RS-v.sx)*cam.z,(p[1]*RS-v.sy)*cam.z]}
+let VIG=null;
+// distance fog: everything around Manhattan slowly fades into the mist
+const EDGEFOG=(()=>{const c=mk();const x=c.getContext('2d');const im=x.createImageData(c.width,c.height),d=im.data;
+ const A=P(5,0),B=P(5,26),C=P(5,13);const ax=(B[0]-A[0]),ay=(B[1]-A[1]);const L=Math.hypot(ax,ay);const ux=ax/L,uy=ay/L,vx=-uy,vy=ux;
+ const half=L/2,across=10*Math.hypot(W,H)/2;const bay=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+ for(let py=0;py<c.height;py++)for(let px=0;px<c.width;px++){const lx=px/RS-C[0],ly=py/RS-C[1]-40;const a=(lx*ux+ly*uy)/(half+30),b=(lx*vx+ly*vy)/(across+28);
+  const r=Math.sqrt(a*a+b*b);let f=Math.min(1,Math.max(0,(r-1)/1.6));f=f*f*(3-2*f);
+  {const Lp=P(LIB.gx,LIB.gy,20);const dd=Math.hypot(px/RS-Lp[0],(py/RS-Lp[1])*1.4);f*=Math.min(1,Math.max(0,(dd-45)/70))}
+  const q=Math.round(f*16+(bay[(py&3)*4+(px&3)]/16-.5)*2)/16; // dithered steps keep the pixel look
+  const al=Math.max(0,Math.min(.92,q*.92));const i=(py*c.width+px)*4;d[i]=20;d[i+1]=26;d[i+2]=32;d[i+3]=al*255}
+ x.putImageData(im,0,0);return c})();
+let WATER_PAT=null;
+const TINTS=new Map(); // cached tinted copies of a sprite canvas
+function tinted(img,col,a){if(!col)return img;const k=col+a;let m=TINTS.get(img);if(!m){m={};TINTS.set(img,m)}if(m[k])return m[k];
+ const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);
+ x.globalCompositeOperation='source-atop';x.globalAlpha=a;x.fillStyle=col;x.fillRect(0,0,c.width,c.height);return m[k]=c}
+function frame(){
+ frameN++;const w=S.weather||'clear';const g=fxc;g.setTransform(RS,0,0,RS,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';
+ // water
+ const water=w==='clear'?['#1a3044','#0a1520']:w==='fog'?['#34424c','#1e2830']:['#132232','#070e16'];const wg=g.createLinearGradient(0,0,0,LH);wg.addColorStop(0,water[0]);wg.addColorStop(1,water[1]);g.fillStyle=wg;g.fillRect(0,0,LW,LH);
+ if(w==='clear'||w==='fog'){const mg=g.createLinearGradient(LW*.78,0,LW*.6,LH);mg.addColorStop(0,'rgba(170,200,230,.10)');mg.addColorStop(.5,'rgba(170,200,230,.04)');mg.addColorStop(1,'rgba(170,200,230,0)');g.fillStyle=mg;g.beginPath();g.moveTo(LW*.72,0);g.lineTo(LW*.86,0);g.lineTo(LW*.7,LH);g.lineTo(LW*.5,LH);g.closePath();g.fill()}
+ if(SPR.water){ // animated wave texture (tools/water_sprite.py): 8 frames of 192x96, tiled and slowly drifting
+  if(!WATER_PAT){const W0=192,H0=96;WATER_PAT=[];for(let i=0;i<8;i++){const c=document.createElement('canvas');c.width=W0;c.height=H0;c.getContext('2d').drawImage(SPR.water.c,i*W0,0,W0,H0,0,0,W0,H0);WATER_PAT.push(g.createPattern(c,'repeat'))}}
+  const sm=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.save();const dx=Math.floor(frameN/6)%192,dy=Math.floor(frameN/12)%96;g.translate(-dx,dy);
+  g.globalAlpha=w==='fog'?.35:w==='clear'?.7:.6;g.fillStyle=WATER_PAT[(frameN>>3)%8];g.fillRect(dx-192,-dy-96,LW+384,LH+192);g.restore();g.globalAlpha=1;g.imageSmoothingEnabled=sm}
+ else{const wr=rng(5);g.fillStyle=w==='clear'?'#22384a':'#1c2e3c';
+ g.globalAlpha=.55;for(let i=0;i<420;i++){const x=(wr()*LW+frameN*(.3+wr()*.3))%LW,y=wr()*LH;g.fillRect(x,y,1+wr()*3,.35)}g.globalAlpha=1}
+ // reflections of the city lights on the water
+ g.globalCompositeOperation='lighter';g.globalAlpha=.14;for(const L of LIGHTS){if(!L.lamp&&!L.neon)continue;const sp=glowSprite(L.c);g.drawImage(sp,L.x-3,L.y+4,6,16)}g.globalAlpha=1;g.globalCompositeOperation='source-over';
+ // boats
+ // draw back to front; boats further away than the statue are drawn before it, so it hides them
+ const bDepth=b=>b.ax==='y'?b.c-b.t:b.t-b.c,libD=LIB.gx-LIB.gy;let libDone=!LIB_OVER;
+ const libOver=()=>{g.drawImage(LIB_OVER.c,LIB_OVER.x,LIB_OVER.y,LIB_OVER.w,LIB_OVER.h);libDone=true};
+ for(const b of BOATS){b.t+=b.v;if(b.ax==='y'){if(b.t>34)b.t=-8;if(b.t<-8)b.t=34}else{if(b.t>16)b.t=-10;if(b.t<-10)b.t=16}}
+ for(const b of [...BOATS].sort((a,c)=>bDepth(a)-bDepth(c))){if(!libDone&&bDepth(b)>libD)libOver();
+  const [x,y]=b.ax==='y'?pt(b.c,b.t):pt(b.t,b.c);const d=b.v>0?1:-1;
+  g.fillStyle='#3e5a6e';for(let k=1;k<6;k++)g.fillRect(x-d*k*3,y+(b.ax==='y'?d*k*1.5:-d*k*1.5),1.5,.5);
+  // boat sprites lie on the SW-NE diagonal (rivers, axis y); mirrored they lie on the NW-SE diagonal (axis x)
+  const BS='boat_'+b.k;if(SPR[BS]){const r=spr(g,BS,x,y+3,{tug:14,steamer:24,barge:18,ferry:22}[b.k],b.ax==='x');
+   if(b.k!=='barge'){g.fillStyle='#5a5a5e';const s=(frameN>>2)%6;g.fillRect(r.top[0]-d*s/2,r.top[1]-2-s,2,1);g.fillRect(r.top[0]-d*s,r.top[1]-4-s,2,2)}}
+  else if(b.k==='barge'){g.fillStyle='#4a3a2e';g.fillRect(x-6,y-2,12,4);g.fillStyle='#6a5a48';g.fillRect(x-5,y-3,10,2)}
+  else{const L=b.k==='steamer'||b.k==='ferry'?10:6;g.fillStyle='#2a2a2e';g.fillRect(x-L/2,y-1,L,3);g.fillStyle=b.k==='ferry'?'#8a6a30':'#7a7a78';g.fillRect(x-L/2+2,y-4,L-4,3);g.fillStyle='#c84a3a';g.fillRect(x,y-7,2,3);
+   g.fillStyle='#f0c860';for(let k=0;k<L-5;k+=2)g.fillRect(x-L/2+2.5+k,y-3,.5,.5);
+   g.fillStyle='#5a5a5e';const s=(frameN>>2)%6;g.fillRect(x+1-d*s/2,y-9-s,2,1);g.fillRect(x-d*s,y-11-s,2,2)}
+ }
+ if(!libDone)libOver();
+ // Liberty + Brooklyn Bridge react to instability: tint, aura, and a jitter that grows with the level
+ {const lv=S.inst>90?2:S.inst>=50?1:0,aura=['#5fd4e0','#e0c040','#b48ef0'][lv],tint=['#5fd4e0','#e0c040','#f06a6a'][lv];
+  const objs=[];if(SPR.liberty&&LIB_RECT)objs.push([SPR.liberty.c,LIB_RECT]);if(SPR.bridge)objs.push([SPR.bridge.c,[OX+246,OY+26,96,80]]);
+  for(const [img,[x,y,w,h]] of objs){const t=tinted(img,tint,lv===2?.38:lv?.24:.2);const j=lv?(frameN>>1):0,r=rng(j*31+x|0);
+   const dx=lv?Math.round((r()*2-1)*lv):0,dy=lv===2?Math.round(r()*2-1):0;
+   g.save();g.shadowColor=aura;g.shadowBlur=(lv?4+lv*5:13)*RS;g.globalAlpha=lv?.9:.8;const sm=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;
+   g.drawImage(t,x+dx,y+dy,w,h);if(lv===2){g.shadowBlur=14*RS;g.globalAlpha=.4;g.drawImage(t,x-dx,y,w,h)}
+   g.imageSmoothingEnabled=sm;g.restore()}}
+ // light pillars over every activated anchor (additive, slowly pulsing)
+ {g.save();g.globalCompositeOperation='lighter';const t=frameN/60;
+  const pillar=(x,y,h,w,col,a)=>{const gr=g.createLinearGradient(0,y,0,y-h);gr.addColorStop(0,col+'cc');gr.addColorStop(.35,col+'55');gr.addColorStop(1,col+'00');
+   g.globalAlpha=a;g.fillStyle=gr;g.fillRect(x-w/2,y-h,w,h);g.fillRect(x-w/6,y-h*1.25,w/3,h*1.25);g.globalAlpha=a*.8;g.drawImage(glowSprite(col),x-w*1.6,y-w*.8,w*3.2,w*1.6)};
+  for(const a of ANCHORS)if(S.anchors[a.id]!==undefined&&a.pos){const p=P(a.pos[0]+.5,a.pos[1]+.5);pillar(p[0],p[1],120,8,'#5fd4e0',.45+.1*Math.sin(t*2+a.pos[0]))}
+  g.restore()}
+ g.setTransform(1,0,0,1,0,0);g.drawImage(city,0,0);if(FXHI){g.globalCompositeOperation='lighter';g.globalAlpha=.55;g.drawImage(WGLOW,0,0)}g.globalAlpha=1;g.globalCompositeOperation='source-over';g.setTransform(RS,0,0,RS,0,0);
+ // traffic, trams and pedestrians (masked to visible streets & sidewalks)
+ carc.setTransform(1,0,0,1,0,0);carc.globalCompositeOperation='source-over';carc.clearRect(0,0,cars.width,cars.height);carc.setTransform(RS,0,0,RS,0,0);
+ for(const c of CARS){c.t+=c.v*c.dir*(w==='storm'?.6:1);if(c.t>c.s.e||c.t<c.s.s){Object.assign(c,newCar())}
+  const off=c.dir>0?.06:-.06;const p=c.s.ax==='y'?P(c.s.c+off,c.t):P(c.t,c.s.c+off);const x=p[0],y=p[1];
+  carc.fillStyle=night(c.c);carc.fillRect(x-1.5,y-1,3,1.5);carc.fillStyle=shade(night(c.c),1.3);carc.fillRect(x-1,y-1.5,2,.5);carc.fillStyle='#0a0a0c';carc.fillRect(x-1.5,y+.5,3,.5);
+  carc.fillStyle='#f8e8a0';carc.fillRect(x+(c.dir>0?1.5:-2),y-.5,.5,.5);carc.fillStyle='#c83a2a';carc.fillRect(x+(c.dir>0?-2:1.5),y-.5,.5,.5)}
+ for(const t of TRAMS){t.t+=t.v;if(t.t>t.s.e-.5)t.t=t.s.s+.5;if(t.t<t.s.s+.5)t.t=t.s.e-.5;
+  for(let k=0;k<3;k++){const p=P(t.s.c+t.off,t.t-k*.12*Math.sign(t.v));carc.fillStyle='#8a6a28';carc.fillRect(p[0]-1.5,p[1]-2,3,2);carc.fillStyle='#5a2a22';carc.fillRect(p[0]-1.5,p[1]-2.5,3,.5);carc.fillStyle='#f0c860';carc.fillRect(p[0]-1,p[1]-1.5,.5,.5);carc.fillRect(p[0]+.5,p[1]-1.5,.5,.5)}
+  if(arng()<.03){const p=P(t.s.c+t.off,t.t);carc.fillStyle='#bff3f8';carc.fillRect(p[0],p[1]-6,.5,.5)}}
+ for(const pd of PEDS){pd.t+=pd.v;if(pd.t>pd.s.e||pd.t<pd.s.s)Object.assign(pd,newPed());
+  const p=pd.s.ax==='y'?P(pd.s.c+pd.side,pd.t):P(pd.t,pd.s.c+pd.side);const x=p[0],y=p[1];const step=((frameN+pd.ph)>>2)&1;
+  carc.fillStyle=pd.c;carc.fillRect(x,y-1.5,.5,1.5);carc.fillStyle='#a08070';carc.fillRect(x,y-2,.5,.5);if(step){carc.fillStyle='#1a1a1e';carc.fillRect(x+.5,y-.5,.5,.5)}}
+ carc.setTransform(1,0,0,1,0,0);carc.globalCompositeOperation='destination-in';carc.drawImage(mask,0,0);g.setTransform(1,0,0,1,0,0);g.drawImage(cars,0,0);g.setTransform(RS,0,0,RS,0,0);
+ // chimney smoke
+ if(frameN%2===0)for(const s of SMOKE_SRC)if(arng()<.35)PUFFS.push({x:s[0]+(arng()-.5),y:s[1],a:1,r:.8});
+ const wind=w==='storm'?.35:.12;
+ for(let i=PUFFS.length-1;i>=0;i--){const p=PUFFS[i];p.y-=.22;p.x+=wind;p.a-=.012;p.r+=.025;if(p.a<=0){PUFFS.splice(i,1);continue}
+  g.globalAlpha=p.a*.55;g.fillStyle=p.a>.6?'#6e7074':'#4e5054';g.fillRect(Math.round(p.x*2)/2-p.r,Math.round(p.y*2)/2-p.r,p.r*2,p.r*2)}
+ g.globalAlpha=1;if(PUFFS.length>900)PUFFS.splice(0,PUFFS.length-900);
+ // cloud shadows (clear)
+ if(w==='clear'){g.globalAlpha=.2;const o=(frameN*.4)%(LW);g.drawImage(CLOUD,-o,0);g.drawImage(CLOUD,LW*2-o,0);g.globalAlpha=1}
+ // lights: lamps, neon, ether — additive glow + light pools on the ground
+ g.globalCompositeOperation='lighter';const fogK=w==='fog'?1.7:w==='rain'||w==='storm'?1.25:1;
+ for(const L of LIGHTS){
+  if(L.blink&&((frameN+Math.floor(L.x))>>3)%3===0)continue;
+  let a=L.neon?(.55+.25*Math.sin(frameN*.3+L.x)):.5;if(L.lamp&&arng()<.002)continue;
+  const sp=glowSprite(L.c);const r=L.r*fogK;g.globalAlpha=a;g.drawImage(sp,L.x-r,L.y-r,r*2,r*2);
+  if(L.lamp){g.globalAlpha=.42;g.drawImage(sp,L.gx-13,L.gy-5,26,10);if(w==='rain'||w==='storm'){g.globalAlpha=.32;g.drawImage(sp,L.gx-2.5,L.gy-1,5,20);g.globalAlpha=.12;g.drawImage(sp,L.gx-9,L.gy-3,18,14)}}
+ }
+ g.globalAlpha=1;g.globalCompositeOperation='source-over';
+ // our technology glows cold electric blue
+ g.globalCompositeOperation='lighter';const blue=glowSprite('#5ab4ff');const teslas=[];
+ for(const k in S.slots)S.slots[k].forEach((f,i)=>{if(!f||!online(f))return;const [tx,ty]=S.slotTiles[k][i];const q=P(tx+.5,ty+.5,0);
+  g.globalAlpha=.2+.05*Math.sin(frameN*.12+tx);g.drawImage(blue,q[0]-14,q[1]-6,28,12);
+  if(f.t==='tesla')teslas.push(P(tx+.5,ty+.5,30));
+  if(f.t==='gen'&&arng()<.05){g.globalAlpha=.9;g.fillStyle='#bfe4ff';const z=P(tx+.5,ty+.5,8+arng()*10);g.fillRect(z[0]+(arng()-.5)*6,z[1],.6,.6)}});
+ // Tesla arcs: crackling lightning from every Tesla generator
+ for(const T of teslas){
+  if(arng()<.55){const n=1+Math.floor(arng()*3);for(let j=0;j<n;j++){const ang=arng()*Math.PI*2,len=10+arng()*22;const ex=T[0]+Math.cos(ang)*len,ey=T[1]+Math.abs(Math.sin(ang))*len*.6+4;
+   g.globalAlpha=.9;g.strokeStyle='#d8f0ff';g.lineWidth=.5;g.beginPath();g.moveTo(T[0],T[1]);let px=T[0],py=T[1];for(let k=1;k<=6;k++){const t=k/6;px=T[0]+(ex-T[0])*t+(arng()-.5)*4*(1-t*.5);py=T[1]+(ey-T[1])*t+(arng()-.5)*4*(1-t*.5);g.lineTo(px,py)}g.stroke();
+   g.globalAlpha=.35;g.strokeStyle='#5ab4ff';g.lineWidth=1.6;g.stroke();g.globalAlpha=.5;g.drawImage(blue,px-5,py-5,10,10)}}
+  g.globalAlpha=.55+.3*arng();g.drawImage(blue,T[0]-14,T[1]-14,28,28)}
+ if(teslas.length>1)for(let i=0;i<teslas.length-1;i++){if(arng()<.18){const A=teslas[i],B=teslas[i+1];g.globalAlpha=.8;g.strokeStyle='#e8f6ff';g.lineWidth=.6;g.beginPath();g.moveTo(A[0],A[1]);for(let k=1;k<12;k++){const t=k/12;g.lineTo(A[0]+(B[0]-A[0])*t+(arng()-.5)*6,A[1]+(B[1]-A[1])*t-Math.sin(t*Math.PI)*14+(arng()-.5)*6)}g.lineTo(B[0],B[1]);g.stroke();g.globalAlpha=.3;g.strokeStyle='#5ab4ff';g.lineWidth=2;g.stroke()}}
+ g.globalAlpha=1;g.globalCompositeOperation='source-over';
+ // instability made visible: the rift, ether motes, glitching reality
+ const I=S.inst||0;
+ if(I>=15){const c=LABELS.park,pulse=.5+.5*Math.sin(frameN*.05);const k=Math.min(1,(I-15)/60);g.globalCompositeOperation='lighter';
+  g.globalAlpha=(.22+.3*k)*(.7+.3*pulse);const gs=glowSprite('#58e08a');g.drawImage(gs,c[0]-60-30*k,c[1]-28-14*k,120+60*k,56+28*k);
+  g.globalAlpha=(.1+.2*k)*pulse;g.drawImage(glowSprite('#a070ff'),c[0]-30,c[1]-16,60,32);g.globalAlpha=1;g.globalCompositeOperation='source-over'}
+ const want=Math.round(Math.max(0,I-20)*(FXHI?.7:.3));
+ while(MOTES.length<want){const t=TILES[Math.floor(arng()*TILES.length)];const q=P(t.x+arng(),t.y+arng(),0);MOTES.push({x:q[0],y:q[1],v:.15+arng()*.35,a:0,life:60+arng()*120,c:arng()<.7?'#7af0a0':'#b890ff'})}
+ if(MOTES.length>want)MOTES.length=want;
+ g.globalCompositeOperation='lighter';for(const m of MOTES){m.y-=m.v;m.x+=Math.sin((m.y+frameN)*.05)*.15;m.life--;m.a=Math.min(1,m.a+.05);if(m.life<0){const t=TILES[Math.floor(arng()*TILES.length)];const q=P(t.x+arng(),t.y+arng(),0);Object.assign(m,{x:q[0],y:q[1],life:60+arng()*120,a:0})}
+  g.globalAlpha=m.a*Math.min(1,m.life/30)*.8;g.drawImage(glowSprite(m.c),m.x-2.5,m.y-2.5,5,5)}g.globalAlpha=1;g.globalCompositeOperation='source-over';
+ if(I>=45&&(GLITCH>0||arng()<(I-40)/4000)){if(GLITCH<=0){GLITCH=3+Math.floor(arng()*5);GL={y:arng()*LH*.8+LH*.1,h:1.5+arng()*5,dx:(arng()-.5)*5}}GLITCH--;
+  g.setTransform(1,0,0,1,0,0);const sy=GL.y*RS,sh=GL.h*RS;g.globalAlpha=.75;g.drawImage(fx,0,sy,fx.width,sh,GL.dx*RS,sy,fx.width,sh);g.globalCompositeOperation='color';g.globalAlpha=.35;g.fillStyle='#40d080';g.fillRect(0,sy,fx.width,sh);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.setTransform(RS,0,0,RS,0,0)}
+ if(false){g.globalCompositeOperation='lighter';g.globalAlpha=(I-60)/100*(.6+.4*Math.sin(frameN*.08));g.drawImage(EDGEGREEN,0,0,LW,LH);g.globalAlpha=1;g.globalCompositeOperation='source-over'}
+ // bloom: bright areas bleed softly into their surroundings
+ if(false){const bc=BLOOM.getContext('2d');bc.globalCompositeOperation='copy';bc.filter='brightness(.7) contrast(3.4) blur(4px)';bc.drawImage(fx,0,0,BLOOM.width,BLOOM.height);bc.filter='none';
+  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';g.globalAlpha=.32;g.imageSmoothingEnabled=true;g.drawImage(BLOOM,0,0,fx.width,fx.height);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.setTransform(RS,0,0,RS,0,0)}
+ // atmospheric haze: the far (northern) side fades into the night air
+ g.fillStyle=HAZE;g.fillRect(0,0,LW,LH);
+
+ // searchlights around the Statue of Liberty
+ if(LIB_P){g.globalCompositeOperation='lighter';const act=S.anchors.liberty!==undefined;
+  LIB_LAMPS.forEach((l,i)=>{const ang=-Math.PI/2+Math.sin(frameN*.025+i*1.7)*0.95+(i%2?.25:-.25);const len=170,wid=.07;
+   const ex=l[0]+Math.cos(ang)*len,ey=l[1]+Math.sin(ang)*len;
+   const gr=g.createLinearGradient(l[0],l[1],ex,ey);gr.addColorStop(0,act?'rgba(140,230,240,.32)':'rgba(255,240,200,.3)');gr.addColorStop(1,'rgba(255,240,200,0)');
+   g.fillStyle=gr;g.beginPath();g.moveTo(l[0],l[1]);g.lineTo(l[0]+Math.cos(ang-wid)*len,l[1]+Math.sin(ang-wid)*len);g.lineTo(l[0]+Math.cos(ang+wid)*len,l[1]+Math.sin(ang+wid)*len);g.closePath();g.fill();
+   g.globalAlpha=.8;g.drawImage(glowSprite('#fff4d0'),l[0]-4,l[1]-4,8,8);g.globalAlpha=1});
+  g.globalCompositeOperation='source-over'}
+ // zeppelins + shadows (with searchlights)
+ for(const z of ZEPS){z.gy+=z.v;if(z.gy>36)z.gy=-10;if(z.gy<-10)z.gy=36;
+  const [sx,sy]=pt(z.gx,z.gy,0);g.globalAlpha=.25;g.fillStyle='#000';for(let i=-12;i<=12;i+=1){const hh=Math.round(3*Math.sqrt(1-(i/13)**2));if((i&1))g.fillRect(sx+i,sy-Math.round(i*.5)-hh,1,hh*2)}g.globalAlpha=1;
+  const [x,y]=pt(z.gx,z.gy,z.z);const d=z.v>0?1:-1;
+  g.globalCompositeOperation='lighter';g.globalAlpha=.06;g.fillStyle='#ffe8b0';g.beginPath();g.moveTo(x,y+5);g.lineTo(sx-10,sy);g.lineTo(sx+10,sy);g.closePath();g.fill();g.globalAlpha=.4;g.drawImage(glowSprite('#ffe8b0'),sx-12,sy-6,24,12);g.globalAlpha=1;g.globalCompositeOperation='source-over';
+  // zeppelin_sw: nose lower-left (v<0, flying down the screen); zeppelin_ne: nose upper-right (v>0). Red light on the tail.
+  const ZN=d<0?'zeppelin_sw':'zeppelin_ne';
+  if(SPR[ZN]){const Z=SPR[ZN],zw=32;const r=spr(g,ZN,x,y+Z.bh*zw/Z.bw/2,zw);if((frameN>>3)%2){g.fillStyle='#f06a6a';if(d<0)g.fillRect(r.x+r.w-3,r.y+3,1,1);else g.fillRect(r.x+2,r.y+r.h-4,1,1)}continue}
+  for(let i=-13;i<=13;i++){const t=i/14,hh=Math.round(4.5*Math.sqrt(Math.max(0,1-t*t)));if(!hh)continue;const cy=y-Math.round(i*.5);
+   g.fillStyle='#2e3034';g.fillRect(x+i,cy-hh,1,hh*2);g.fillStyle='#4a4d52';g.fillRect(x+i,cy-hh,1,Math.ceil(hh*1.1));g.fillStyle='#6e7176';g.fillRect(x+i,cy-hh,1,Math.ceil(hh*.45))}
+  for(let i=-10;i<=10;i+=3){const cy=y-Math.round(i*.5);g.fillStyle='#24262a';g.fillRect(x+i,cy-4,.5,8)}
+  const tx=x-d*12,ty=y+d*6;g.fillStyle='#8a8a84';g.fillRect(tx-1,ty-8,2,4);g.fillRect(tx-1,ty+3,2,3);
+  g.fillStyle='#3a3a3e';g.fillRect(x-2,y+4,5,2);g.fillStyle='#f0c860';g.fillRect(x-1.5,y+4.5,.5,.5);g.fillRect(x,y+4.5,.5,.5);g.fillRect(x+1.5,y+4.5,.5,.5);
+  if((frameN>>3)%2){g.fillStyle='#f06a6a';g.fillRect(tx,ty-1,1,1)}
+  g.fillStyle='#c84a3a';g.fillRect(x-4+d*2,y-Math.round(-d*2*.5)-2,3,1);
+ }
+ // biplane: occasional fast pass from the north-west, small shadow below
+ if(SPR.biplane)for(const a of PLANES){a.gx+=a.v;if(a.gx>40)a.gx=-30;if(a.gx<-14||a.gx>18)continue;
+  const [sx,sy]=pt(a.gx,a.gy,0);g.globalAlpha=.22;g.fillStyle='#000';g.fillRect(sx-5,sy-1,10,2);g.fillRect(sx-2,sy-2,4,4);g.globalAlpha=1;
+  const [x,y]=pt(a.gx,a.gy,a.z);const r=spr(g,'biplane',x,y,17);if((frameN>>2)%2){g.fillStyle='#f06a6a';g.fillRect(r.x,r.y+r.h*.35,1,1)}}
+ // weather overlays
+ if(w==='rain'||w==='storm'){g.globalAlpha=w==='storm'?.3:.18;g.fillStyle='#05080c';g.fillRect(0,0,LW,LH);g.globalAlpha=1;
+  const n=w==='storm'?700:480;g.fillStyle=w==='storm'?'#6e8094':'#5a6c80';
+  for(let i=0;i<n;i++){const d=DROPS[i];d.y+=7;d.x-=2;if(d.y>LH){d.y-=LH;d.x=arng()*LW}if(d.x<0)d.x+=LW;g.fillRect(Math.round(d.x*2)/2,Math.round(d.y*2)/2,.5,d.l)}
+  g.fillStyle='#9fb0c4';for(let i=0;i<60;i++)g.fillRect(Math.floor(arng()*LW*2)/2,Math.floor(arng()*LH*2)/2,.5,.5);
+  if(w==='storm'){if(flash>0){g.globalAlpha=flash===2?.45:.2;g.fillStyle='#eef2f8';g.fillRect(0,0,LW,LH);g.globalAlpha=1;flash--}else if(arng()<.008)flash=2}}
+ if(w==='fog'){g.globalAlpha=.18;g.fillStyle='#3a4048';g.fillRect(0,0,LW,LH);const o1=(frameN*.25)%LW,o2=(frameN*.5)%LW;g.globalAlpha=.45;g.drawImage(FOG1,-o1,0);g.drawImage(FOG1,LW*2-o1,0);g.globalAlpha=.3;g.drawImage(FOG2,-o2,0);g.drawImage(FOG2,LW*2-o2,0);g.globalAlpha=1}
+ g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+ if(S.sel){g.globalCompositeOperation='saturation';g.drawImage(dimmask,0,0);g.globalCompositeOperation='multiply';g.drawImage(dimmask,0,0);g.globalCompositeOperation='source-over'}
+ g.drawImage(EDGEFOG,0,0);
+ present();
+}
+function present(){
+ const v=view();
+ mcx.setTransform(1,0,0,1,0,0);mcx.imageSmoothingEnabled=true;mcx.imageSmoothingQuality='high';mcx.drawImage(fx,v.sx,v.sy,v.sw,v.sh,0,0,cv.width,cv.height);
+ if(!VIG){VIG=mcx.createRadialGradient(cv.width/2,cv.height/2,cv.height*.35,cv.width/2,cv.height/2,cv.width*.75);VIG.addColorStop(0,'rgba(0,0,0,0)');VIG.addColorStop(1,'rgba(0,0,0,.55)')}
+ mcx.fillStyle=VIG;mcx.fillRect(0,0,cv.width,cv.height);
+ // selected district outline
+ const K=RS/2,TC=p=>toC(p,v).map(x=>x/K);mcx.setTransform(K,0,0,K,0,0);
+ mcx.strokeStyle='#ffd27a';mcx.lineWidth=2;mcx.setLineDash([6,4]);mcx.beginPath();
+ for(const t of TILES){if(t.d!==S.sel)continue;for(const [dx,dy,a,b] of[[0,-1,P(t.x,t.y),P(t.x+1,t.y)],[0,1,P(t.x,t.y+1),P(t.x+1,t.y+1)],[-1,0,P(t.x,t.y),P(t.x,t.y+1)],[1,0,P(t.x+1,t.y),P(t.x+1,t.y+1)]]){if(districtAt(t.x+dx,t.y+dy)!==t.d){const A=TC(a),B=TC(b);mcx.moveTo(A[0],A[1]);mcx.lineTo(B[0],B[1])}}}
+ mcx.stroke();mcx.setLineDash([]);
+ // district labels
+ const fs=Math.round(15+cam.z*3);mcx.textAlign='center';mcx.font=fs+'px Silkscreen, monospace';
+ for(const k in LABELS){const p=TC(LABELS[k]);if(p[0]<-200||p[1]<-50||p[0]>cv.width/K+200||p[1]>cv.height/K+50)continue;const lab=DISTRICTS[k].name.toUpperCase();const ww=Math.ceil(mcx.measureText(lab).width)+16;
+  mcx.fillStyle='rgba(18,19,20,.88)';mcx.fillRect(p[0]-ww/2,p[1]+12,ww,fs+10);mcx.fillStyle=S.sel===k?'#e0a43a':'#5c6168';mcx.fillRect(p[0]-ww/2,p[1]+12+fs+8,ww,2);
+  mcx.fillStyle=S.sel===k?'#ffd27a':S.sel?'#7a7e84':'#e8eaec';mcx.fillText(lab,p[0],p[1]+12+fs)}
+}
+const LABELS={};{const c={};TILES.forEach(t=>{(c[t.d]=c[t.d]||[]).push(t)});for(const k in c){const ts=c[k];LABELS[k]=P(ts.reduce((s,t)=>s+t.x,0)/ts.length+.5,ts.reduce((s,t)=>s+t.y,0)/ts.length+.5).map(Math.round)}}
+function draw(){drawStatic();frame()}
+let last=0;function loop(ts){requestAnimationFrame(loop);if(document.hidden||ts-last<50)return;last=ts;if(S)frame()}
+requestAnimationFrame(loop);
+// ---- input: click to select, drag to pan, wheel / buttons to zoom ----
+function canvasXY(ev){const r=cv.getBoundingClientRect();return[(ev.clientX-r.left)*(cv.width/r.width),(ev.clientY-r.top)*(cv.height/r.height)]}
+function pickAt(cxp,cyp){const v=view();const lx=(v.sx+cxp/cam.z)/RS,ly=(v.sy+cyp/cam.z)/RS;
+ const a=(lx-OX)/W,b=(ly-OY)/H;const gx=Math.floor((a+b)/2),gy=Math.floor((a-b)/2);
+ const d=districtAt(gx,gy)||null;S.sel=d;tab='bezirk';buildDim();render()}
+let drag=null;
+cv.addEventListener('pointerdown',ev=>{drag={x:ev.clientX,y:ev.clientY,cx:cam.x,cy:cam.y,moved:false};cv.setPointerCapture(ev.pointerId)});
+cv.addEventListener('pointermove',ev=>{if(!drag)return;const r=cv.getBoundingClientRect();const k=cv.width/r.width/cam.z;const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>6)drag.moved=true;if(drag.moved){cam.x=drag.cx-dx*k;cam.y=drag.cy-dy*k;present()}});
+cv.addEventListener('pointerup',ev=>{if(drag&&!drag.moved){const [x,y]=canvasXY(ev);pickAt(x,y)}drag=null});
+function zoomTo(z,cxp,cyp){const v=view();const wx=v.sx+(cxp??cv.width/2)/cam.z,wy=v.sy+(cyp??cv.height/2)/cam.z;cam.z=Math.max(1,Math.min(3,z));const sw=cv.width/cam.z,sh=cv.height/cam.z;cam.x=wx-((cxp??cv.width/2)/cv.width-.5)*sw;cam.y=wy-((cyp??cv.height/2)/cv.height-.5)*sh;present()}
+// mouse-wheel zoom disabled on request; zoom with the +/- buttons
+document.getElementById('zin').onclick=()=>zoomTo(Math.round(cam.z)+1);
+document.getElementById('zout').onclick=()=>zoomTo(Math.round(cam.z)-1);
+document.getElementById('zhome').onclick=()=>{cam.z=1;cam.x=cv.width/2;cam.y=cv.height/2;present()};
+
+// ---------- UI ----------
+let tab='bezirk';
+const $=id=>document.getElementById(id);
+const TIP={"money": "Money. Earned every turn from all districts: base income \u00d7 Prosperity \u00d7 Control \u00d7 (1 \u2212 Unrest/2). Districts without a facility only pay 30 %. Spent on facilities and upkeep. Below $0, loyalty drops.", "power": "Power (MW): used / produced. Generators and Tesla towers produce power, everything else consumes it. Without enough power some facilities shut down.", "crystals": "Ether crystals. Mined by ether drills (best in Central Park). Needed for advanced facilities and to activate anchors.", "psy": "Psy energy. Produced by laboratories and radio towers. Spent on psy actions that influence all of Manhattan.", "anchors": "Anchors: landmarks that stabilise your universe. Find them through research or visiting scientists, then activate them with crystals. Hold 6 at the end of an epoch to win.", "wohl": "Prosperity: how wealthy the city is. Multiplies your income. Slowly drifts back towards 55 %. Events like the boom or the crash change it.", "loyal": "Loyalty: how much the city trusts the authorities. Above 50 % your control grows faster, below 50 % it erodes. Drops when the press gets curious or wages go unpaid. Raised by Inspire.", "unruhe": "Unrest: how restless the city is. Reduces income (\u221225 % at 50 %). Rises with every facility you build and run. Above 60 % unions strike in the Lower East Side, above 70 % the police may raid a facility. Lowered by Calm and rain.", "kontrolle": "Control: how firmly your bureau holds the city. Multiplies your income and is required by some anchors. Grows with every district that has a facility, with radio towers and with Whisper; slowly decays otherwise."};
+function ti(k){return`<span class="info" data-tip="${k}">i</span>`}
+function yieldOf(k){const c=S.c,D=DISTRICTS[k],ev=S.events[S.round];const y={inc:0,up:0,psy:0,cr:0,rp:0,inst:0,prod:0,use:0};
+ const present=S.slots[k].some(f=>f);let inc=D.base*(c.wohl/100)*(c.kontrolle/100)*(1-c.unruhe/200)*(present?1:.3);if(k==='fidi'&&ev==='boom')inc*=1.3;if(ev==='crash')inc*=.5;if(c.frenzy>0)inc*=1.2;y.inc=inc;
+ S.slots[k].forEach(f=>{if(!f||f.bt>0)return;const F=FAC[f.t];y.up+=F.up*(S.res.ind>=3?.7:1)+(k==='hells'?300:0);
+  if(F.mw<0)y.prod+=-F.mw*(S.res.ind>=1?1.2:1)*(S.weather==='storm'?.85:1);else if(F.mw>0)y.use+=F.mw*(k==='midtown'?1.2:1)*(ev==='heat'?1.2:1);
+  if(!online(f))return;
+  if(f.t==='lab'){y.psy+=5;y.rp+=1+(k==='village'?1:0)}
+  if(f.t==='sender')y.psy+=3+(k==='harlem'||k==='times'?2:0);
+  if(f.t==='drill'){let cr=k==='park'?2:1;if(S.res.aether>=3)cr+=1;if(ev==='storm'&&k==='park')cr*=1.5;y.cr+=cr;if(k==='park')y.inst+=2}
+  if(f.t==='stab')y.inst-=2;if(f.t==='tesla')y.inst+=1});
+ return y}
+function yieldBox(ks,extra){const y={inc:extra||0,up:0,psy:0,cr:0,rp:0,inst:0,prod:0,use:0};ks.forEach(k=>{const a=yieldOf(k);for(const v in y)y[v]+=a[v]});
+ const sg=(v,d=0)=>(v>0?'+':v<0?'−':'±')+Math.abs(v).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');const cl=v=>v>0?'pos':v<0?'neg':'';const net=y.inc-y.up;
+ return`<div class="yield"><span><em>Income</em><b class="pos">+$${fmt(y.inc)}</b></span><span><em>Upkeep</em><b class="${y.up?'neg':''}">−$${fmt(y.up)}</b></span>
+ <span><em>Psy</em><b class="${cl(y.psy)}">${sg(y.psy)}</b></span><span><em>◆ Crystals</em><b class="${cl(y.cr)}">${sg(y.cr,y.cr%1?1:0)}</b></span>
+ <span><em>Research</em><b class="${cl(y.rp)}">${sg(y.rp)}</b></span><span><em>Instability</em><b class="${cl(-y.inst)}">${sg(y.inst)} %</b></span>
+ <span><em>Power made</em><b class="${y.prod?'pos':''}">${Math.round(y.prod)} MW</b></span><span><em>Power used</em><b class="${y.use?'neg':''}">${Math.round(y.use)} MW</b></span>
+ <span class="tot"><em>Net per turn</em><b class="${cl(net)}">${net<0?'−':'+'}$${fmt(Math.abs(net))}</b></span></div>`}
+const ADV_PIX=["....................", "......kkkkkkkk......", "....kksssssssskk....", "...kssssssssssssk...", "..kHssssssssssssHk..", "..khHssssssssssHhk..", ".khhHssssssssssHhhk.", ".khhSggggssggggShhk.", ".khhSgeeggggeegShhk.", ".khhSggggssggggShhk.", "..khSsssSssSsssShk..", "..kSsssssSSsssssSk..", "..kSssmmmmmmmmssSk..", "..kSsmmmmmmmmmmsSk..", "..kSmMMmmmmmmMMmSk..", "...kSsMkkkkkkMsSk...", "...kSssssssssssSk...", "....kSSssssssSSk....", ".....kkSSssSSkk.....", "......kSSSSSSk......", "...kkwwkcccckwwkk...", ".kkwwwwkcrrckwwwwkk.", "kwwwwwwkrrrrkwwwwwwk", "kwWwwwwkcrrckwwwwWwk", "kwWwwwwwkcckwwwwwWwk", "kwWwwwwwkcckwwwwwWwk", "kwWwwwwwwkkwwwwwwWwk", "kkkkkkkkkkkkkkkkkkkk"],ADV_PAL={k:'#1a1410',s:'#d8a880',S:'#b07a58',h:'#c8c8c0',H:'#8a8a84',g:'#2a2a2a',e:'#a8c8d0',m:'#e8e4dc',M:'#b8b4ac',w:'#e8e8e0',W:'#b0b0a8',r:'#b02a22',c:'#f0f0e8'};
+function drawAdvisor(){const c=document.getElementById('advpic');if(!c||c.dataset.done)return;
+ if(!c.dataset.tried){c.dataset.tried=1;const im=new Image();im.onload=()=>{ // PixelLab bust of Dr. Elias Crane, cropped to the 5:7 frame
+  c.width=92;c.height=128;const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(im,18,0,92,128,0,0,92,128);c.style.imageRendering='auto';c.style.width='66px';c.style.height='92px';c.dataset.done=1};
+  im.onerror=()=>drawAdvisor();im.src='sprites/crane.png';return}
+ const x=c.getContext('2d');ADV_PIX.forEach((row,y)=>[...row].forEach((ch,i)=>{if(ADV_PAL[ch]){x.fillStyle=ADV_PAL[ch];x.fillRect(i,y,1,1)}}));x.fillStyle='#ffffff';x.fillRect(6,8,1,1);x.fillRect(13,8,1,1);c.dataset.done=1}
+function advise(){const t=[];computePower();const free=S.mw.prod-S.mw.use;const all=Object.keys(DISTRICTS);let net=1000;all.forEach(k=>{const y=yieldOf(k);net+=y.inc-y.up});
+ const act=ANCHORS.find(a=>S.found[a.id]&&!S.anchors[a.id]&&a.test(S)&&S.crystals>=a.k);
+ if(act)t.push(`Splendid! We meet the condition for <b>${act.name}</b>. Activate the anchor now in the Anchors tab.`);
+ if(S.inst>=40&&count(S,'stab')<1)t.push(has(['aether',1])?'The readings are alarming. Build a <b>Stabilizer</b> before reality starts to fray.':'Instability is climbing. Research <b>Ether</b> so we can build Stabilizers.');
+ if(free<10)t.push(`We are nearly out of power (${free} MW spare). A <b>Coal Generator</b> first, please.`);
+ if(S.c.unruhe>55)t.push('The streets are restless. A little <b>Calm</b> would do wonders.');
+ if(S.attention>50)t.push('The newspapers are asking questions. Lie low – or use <b>Forget</b>.');
+ if(net<0)t.push(`We lose $${fmt(-net)} per turn. Build where the money is – the <b>Financial District</b> or <b>Midtown</b>.`);
+ if(count(S,'lab')<1)t.push('Without a <b>Laboratory</b> we have no research and no psy. Build one!');
+ const empty=all.filter(k=>k!=='park'&&!S.slots[k].some(f=>f)).sort((a,b)=>DISTRICTS[b].base-DISTRICTS[a].base);
+ if(empty.length)t.push(`Put a facility in <b>${DISTRICTS[empty[0]].name}</b>. A district with a facility pays full income and strengthens control.`);
+ if(S.round>=3&&S.resTarget!=='anchor'&&ANCHORS.filter(a=>S.found[a.id]).length<6)t.push('We still know too few anchors. Switch research to <b>anchor search</b>.');
+ const goal=ANCHORS.find(a=>S.found[a.id]&&!S.anchors[a.id]&&!a.test(S));
+ if(goal)t.push(`Work towards <b>${goal.name}</b>: ${goal.cond}.`);
+ if(S.crystals<6&&count(S,'drill')<1)t.push('Anchors cost crystals. A <b>Crystal Drill</b> in Central Park yields the most.');
+ if(!t.length)t.push('Everything is in excellent order. End the turn – and perhaps have a cup of tea.');
+ const out=t.slice(0,2);if(S.round%2===1)out.push('<i>'+CRANE_ASIDE[(S.round>>1)%CRANE_ASIDE.length]+'</i>');return out}
+const CRANE_ASIDE=['I once calibrated the ether resonator with a tuning fork and a cheese sandwich. Do not ask which part mattered.','If you see a second version of me, be polite. He is far less patient.','The rift hums in B-flat. I find that oddly comforting.','Reality is merely a habit, agent. Ours must become a very stubborn one.','Mr. Tesla borrowed my best screwdriver in 1919. I have seen it in two universes since.','Never trust a landmark that casts two shadows.','I have run the numbers. Then they ran away. Numbers do that near the rift.']
+function bar(v,col){return`<div class="bar"><i style="width:${clamp(v,0,100)}%;background:${col}"></i></div>`}
+function render(){
+ computePower();
+ {const rp=(ic,cls,val,lab,tip)=>`<span class="rp ${cls}"><img src="ui/ico_${ic}.png" alt="" width="32" height="32"><span><b>${val}</b><small>${lab}</small></span>${ti(tip)}</span>`;
+ $('res').innerHTML=rp('money','m','$'+fmt(S.money),'Money','money')+rp('power','w',`${S.mw.use}/${S.mw.prod}`,'MW power','power')+rp('crystal','k',Math.floor(S.crystals),'Crystals','crystals')+rp('psy','p',Math.floor(S.psy),'Psy','psy')+rp('anchor','a',`${Object.keys(S.anchors).length}/10`,'Anchors','anchors')}
+ $('date').textContent=`${{clear:'☀ CLEAR',rain:'☂ RAIN',fog:'≋ FOG',storm:'ϟ STORM'}[S.weather||'clear']} · ${MONTHS[monthOf(S.round)]} ${yearOf(S.round)} · TURN ${Math.min(S.round+1,ROUNDS)}/${ROUNDS} · EPOCH ${Math.min(epoch(S),6)}`;
+ Music.weather(S.weather||'clear');drawAdvisor();$('advtxt').innerHTML=advise().map(x=>`<p>${x}</p>`).join('');
+ $('instv').textContent=Math.round(S.inst)+' %';$('instb').style.width=S.inst+'%';$('instb').style.background=S.inst>90?'#f06a6a':S.inst>=50?'#e0c040':'#7fd68a';document.querySelector('.inst').dataset.lvl=S.inst>90?'crit':S.inst>=50?'warn':'ok';
+ document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+ $('end').disabled=!!S.over;$('end').textContent=S.over?'GAME OVER':'END TURN';
+ {const d=S.c;$('mstats').innerHTML=`<div class="stat">PROSPERITY ${Math.round(d.wohl)}% ${ti('wohl')}${bar(d.wohl,'#e0a43a')}</div><div class="stat">LOYALTY ${Math.round(d.loyal)}% ${ti('loyal')}${bar(d.loyal,'#7fd68a')}</div><div class="stat">UNREST ${Math.round(d.unruhe)}% ${ti('unruhe')}${bar(d.unruhe,'#f06a6a')}</div><div class="stat">CONTROL ${Math.round(d.kontrolle)}% ${ti('kontrolle')}${bar(d.kontrolle,'#5fd4e0')}</div>`}
+ const p=$('pane');
+ if(tab==='bezirk'){
+  const k=S.sel,D=DISTRICTS[k],d=S.c;
+  let h='';
+  if(!k){h+=`<div class="dhero" style="--img:url(art/all.png)"><h2>ALL DISTRICTS</h2></div><h3>Per turn (all of Manhattan)</h3>${yieldBox(Object.keys(DISTRICTS),1000)}<p class="note">Includes $1,000 federal black budget. Click a district on the map to see its facilities and build there.</p><div class="slots" style="grid-template-columns:1fr 1fr">`;for(const kk in DISTRICTS){const sl=S.slots[kk];const done=sl.filter(f=>f&&!(f.bt>0)).length,bld=sl.filter(f=>f&&f.bt>0).length;const cols=[...Array(done).fill('rgba(29,90,112,.62)'),...Array(bld).fill('rgba(74,77,82,.62)'),...Array(3-done-bld).fill('rgba(12,13,15,.62)')];const bg=`linear-gradient(90deg,${cols[0]} 0 33.33%,${cols[1]} 33.33% 66.66%,${cols[2]} 66.66%),url(art/${kk}.png) center 35%/cover no-repeat`;h+=`<div class="slot dslot" style="cursor:pointer;background:${bg}" data-go="${kk}"><b>${DISTRICTS[kk].name}</b><small>${done}/3 built${bld?` · ${bld} building`:''}</small></div>`}h+='</div>'}
+  else{h+=`<div class="dhero" style="--img:url(art/${k}.png)"><h2>${D.name.toUpperCase()}</h2></div><p class="note">${D.note}</p>
+  <h3>Per turn</h3>${yieldBox([k])}
+  <h3>Facilities</h3><div class="slots">`;
+  S.slots[k].forEach((f,i)=>{if(f){const st=f.bt>0?`under construction · ${f.bt} turn${f.bt>1?'s':''}`:f.off?`closed (${f.off})`:f.nopower?'no power':'active';h+=`<div class="slot ${online(f)?'':'off'}"><b>${FAC[f.t].name}</b><small>${st}</small><button class="btn small" data-dem="${i}">Demolish</button></div>`}else h+=`<div class="slot"><small>empty</small></div>`});
+  h+='</div>'}
+  const free=k?S.slots[k].indexOf(null):-1;
+  if(free>=0){h+=`<h3>Build in ${D.name}</h3><div class="btns">`;
+   for(const t in FAC){const F=FAC[t];const cost=F.cost*(k==='les'?.7:1);const ok=S.money>=cost&&S.crystals>=F.k&&has(F.req);
+    h+=`<button class="btn" data-build="${t}" ${ok?'':'disabled'}>${F.name}<small>$${fmt(cost)}${F.k?` · ◆${F.k}`:''}${F.mw>0?` · ${F.mw} MW`:''} · ${F.bt} turn${F.bt>1?'s':''} · ${F.d}${F.req&&!has(F.req)?` · ${RESEARCH[F.req[0]].name} ${F.req[1]}`:''}</small></button>`}
+   h+='</div>'}
+  if(count(S,'portal')>0)h+=`<h3>Portal</h3><button class="btn" id="trade" ${S.money>=2500?'':'disabled'}>Buy a crystal from a neighbouring universe<small>$2,500 → 1 crystal · +1 % instability</small></button>`;
+  h+=`<p class="note" style="margin-top:14px">Press attention: ${Math.round(S.attention)} · Last income: $${fmt(S.lastIncome)}</p>`;
+  p.innerHTML=h;
+  p.querySelectorAll('[data-build]').forEach(b=>b.onclick=()=>build(k,free,b.dataset.build));
+  p.querySelectorAll('[data-dem]').forEach(b=>b.onclick=()=>demolish(k,+b.dataset.dem));
+  p.querySelectorAll('[data-psy]').forEach(b=>b.onclick=()=>usePsy(k,b.dataset.psy));
+  p.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sel=b.dataset.go;buildDim();render()});
+  if($('trade'))$('trade').onclick=trade;
+ }
+ if(tab==='psy'){ // psy actions: own tab
+  let h=`<div class="dhero" style="--img:url(art/park.png);margin-top:-14px"><h2>PSY ACTIONS</h2></div><p class="note">Psy actions affect all of Manhattan. Each one draws a little press attention and adds 0.5 % instability.</p><h3>Available: ${Math.floor(S.psy)} Psy ${ti('psy')}</h3><div class="btns">`;
+  for(const a in PSY){const P=PSY[a];const ok=S.psy>=P.cost&&has(P.req);h+=`<button class="btn" data-psy="${a}" ${ok?'':'disabled'}>${P.name}<small>${P.cost} Psy · ${P.d}${P.req&&!has(P.req)?` · Psy ${P.req[1]}`:''}</small></button>`}
+  h+='</div>';p.innerHTML=h;
+  p.querySelectorAll('[data-psy]').forEach(b=>b.onclick=()=>usePsy(S.sel,b.dataset.psy));
+ }
+ if(tab==='forschung'){
+  let h=`<h2>RESEARCH</h2><p class="note">Research points: ${S.rp} (from labs). Pick a branch and it is researched automatically.</p><div class="tree">`;
+  for(const k in RESEARCH){const R=RESEARCH[k];h+=`<button class="br ${S.resTarget===k?'sel':''}" data-r="${k}"><b>${R.name}</b> · level ${S.res[k]}<ol>${R.lv.map((l,i)=>`<li class="${S.res[k]>i?'done':''}">${l} <small>(${RCOST[i]})</small></li>`).join('')}</ol></button>`}
+  const left=ANCHORS.filter(a=>!S.found[a.id]).length;
+  h+=`</div><h3>Anchor search</h3><button class="br ${S.resTarget==='anchor'?'sel':''}" data-r="anchor" style="width:100%;text-align:left"><b>Ether cartography</b> · ${10-left}/10 anchors located<br><small>${left?`Next anchor: ${S.rp}/${ANCHOR_RP(S.anchorFinds)} research points. Each search gets harder.`:'All anchors located.'}</small></button>`;
+  h+=`<h3>Scientists on staff (${S.sci.length}/${MAX_SCI})</h3>`+(S.sci.length?'':'<p class="note">None yet. Now and then a famous scientist offers to work for the bureau in secret – and brings the location of an anchor.</p>')
+   +`<div class="scards">${S.sci.map(sciCard).join('')}${SCIENTISTS.filter(x=>!S.sci.includes(x.name)).map(sciBack).join('')}</div>`;
+  p.innerHTML=h;
+  p.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S.resTarget=b.dataset.r;save();render()});
+ }
+ if(tab==='anker'){
+  let h=`<h2>THE 10 ANCHORS</h2><p class="note">Activate ${WIN} landmarks and hold them until the end of an epoch. Roaming anchors are lost if their condition is no longer met at the end of an epoch.</p>`;
+  const nf=ANCHORS.filter(a=>S.found[a.id]).length;h+=`<p class="note">Located: ${nf}/10. Unknown anchors must be found through research (Research → Anchor search) or by a visiting scientist.</p>`;
+  // anchor cards (art/anc_<id>.png, PixelLab); unknown anchors show a generic ether portal
+  ANCHORS.forEach(a=>{if(!S.found[a.id]){h+=`<div class="acard unknown" style="--img:url(art/anc_portal.png)"><b>??? Unknown anchor</b><span class="c">Not yet located</span></div>`;return}const act=S.anchors[a.id]!==undefined;const ok=a.test(S);
+   h+=`<div class="acard ${act?'active':ok?'ok':''}" style="--img:url(art/anc_${a.id}.png)"><div class="aact">${act?'<span class="abadge">ACTIVE</span>':`<button class="btn small" data-a="${a.id}" ${ok&&S.crystals>=a.k?'':'disabled'}>Activate ◆${a.k}</button>`}</div><b>${a.name}</b><span class="c">${a.kind} · ${a.cond} ${ok?'✓':''}</span></div>`});
+  p.innerHTML=h;p.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>activate(b.dataset.a));
+ }
+ if(tab==='zeitung'){
+  let h='<h2>NEWS</h2><div class="log">';
+  if(!S.log.length)h+='<p class="note">No news yet.</p>';
+  S.log.forEach(l=>{h+=`<h3>Turn ${l.round}</h3>`+l.items.map(i=>`<p><b>${i[0]}</b> – ${i[1]}</p>`).join('')});
+  h+=`</div><h3>Game</h3><p class="note">Seed ${S.seed}</p><button class="btn small" id="ng">New game</button>`;
+  p.innerHTML=h;$('ng').onclick=()=>{newGame();showPaper();render()};
+ }
+ draw();
+}
+function showPaper(){
+ if(!S.paper)return;
+ Music.paper(S.over);
+ $('paper').innerHTML=`<div class="mast"><small>The</small>Manhattan Ether</div><div class="dl">MANHATTAN · ${MONTHS[monthOf(S.round)].toUpperCase()} ${yearOf(S.round)} · ISSUE ${S.round+1} · FIVE CENTS</div><h1>${S.paper.title}</h1><img class="photo" src="${S.paper.photo||'sprites/paper_photo.png'}" alt="" width="320" height="128"><div class="cols">`+S.paper.items.map((i,k)=>`<div class="art"><h4>${i[0]}</h4><p>${i[1]}</p><i class="fill${k%2?' s':''}"></i></div>`).join('')+`</div>`+`<button id="close">${S.over?'New game':'Continue'}</button>`;
+ $('modal').classList.add('on');
+ $('close').onclick=()=>{$('modal').classList.remove('on');S.paper=null;Music.closePaper();if(S.over){newGame();showPaper()}save();render()};
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+$('end').onclick=endRound;
+
+if(!load())newGame();
+render();showPaper();
+if(document.fonts)document.fonts.ready.then(()=>render());
+
+</script>
+<div id="tip"></div>
+<script>(()=>{const t=document.getElementById('tip');document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(!el){t.style.display='none';return}t.textContent=TIP[el.dataset.tip];t.style.display='block';const r=el.getBoundingClientRect();let x=r.left+r.width/2-140,y=r.bottom+8;x=Math.max(8,Math.min(innerWidth-288,x));if(y+t.offsetHeight>innerHeight-8)y=r.top-t.offsetHeight-8;t.style.left=x+'px';t.style.top=y+'px'})})()</script>
+<script>(()=>{const m=document.getElementById('manual');document.getElementById('help').onclick=()=>m.classList.add('on');document.getElementById('mclose').onclick=()=>m.classList.remove('on');m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')});addEventListener('keydown',e=>{if(e.key==='Escape')m.classList.remove('on')})})()</script>
+<script>(()=>{const b=document.getElementById('fxq');const u=()=>{b.classList.toggle('off',!FXHI);b.title='Graphics effects: '+(FXHI?'high':'low')};u();b.onclick=()=>{FXHI=!FXHI;try{localStorage.setItem('singularity-fx',FXHI?'high':'low')}catch(e){}u()}})()</script>
+<script>
+document.getElementById('newgame').onclick=()=>{if(!confirm('Start a new game? Your current progress will be lost.'))return;newGame();showPaper();render()};
+// in-game quit dialog: NEW GAME or EXIT (back to the website); ✕, Esc or a click outside returns to the game
+{const dlg=document.getElementById('quitdlg'),close=()=>dlg.classList.remove('on');
+ document.getElementById('quitgame').onclick=()=>{dlg.classList.add('on');document.getElementById('q_new').focus()};
+ document.getElementById('q_close').onclick=close;dlg.onclick=e=>{if(e.target===dlg)close()};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dlg.classList.contains('on'))close()});
+ document.getElementById('q_new').onclick=()=>{close();newGame();showPaper();render()};
+ document.getElementById('q_exit').onclick=()=>{S.over='quit';save();location.href='https://singularity.cognitronics.ai'};}
+</script>
+<script>(()=>{ // collapse Dr. Crane's tips (remembered per browser)
+ const a=document.getElementById('advisor'),b=document.getElementById('advtog');
+ const set=c=>{a.classList.toggle('collapsed',c);b.setAttribute('aria-expanded',String(!c));b.title=c?'Show tips':'Hide tips';try{localStorage.setItem('singularity-advisor',c?'1':'0')}catch(e){}};
+ let c=false;try{c=localStorage.getItem('singularity-advisor')==='1'}catch(e){}
+ set(c);b.onclick=()=>set(!a.classList.contains('collapsed'));
+})();</script>
+<script>(()=>{ // keep the map HUD (instability + Dr. Crane, status + bars, End Turn, Help) in view while scrolling the map
+ const mw=document.querySelector('.mapwrap'),hud=document.createElement('div');hud.className='hud';
+ mw.insertBefore(hud,mw.firstChild);hud.appendChild(document.querySelector('.mapwrap .inst'));hud.appendChild(document.querySelector('.mapwrap .turnbar'));
+ if(document.documentElement.classList.contains('m')){const tc=document.querySelector('.tcenter');if(tc)hud.appendChild(tc);setTimeout(()=>{try{zoomTo(1.7)}catch(e){}},50)}
+ const top=document.querySelector('.top'),fit=()=>document.documentElement.style.setProperty('--toph',top.offsetHeight+'px');fit();addEventListener('resize',fit);
+})();</script>
+</body>
+</html>

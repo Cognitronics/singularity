@@ -1,0 +1,15 @@
+services:
+  singularity-web:
+    image: nginx:alpine
+    container_name: singularity-web
+    restart: unless-stopped
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+    networks:
+      - npm
+
+networks:
+  npm:
+    external: true
+    # Name of the network Nginx Proxy Manager runs in (docker network ls)
+    name: nginx-proxy_default
