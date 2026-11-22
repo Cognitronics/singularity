@@ -7,6 +7,20 @@ Singularity is a turn-based strategy game in the browser. You lead a secret divi
 
 ▶ **Play it:** [singularity.cognitronics.ai](https://singularity.cognitronics.ai)
 
+![Singularity](docs/screenshots/cover.jpg)
+
+## The story
+
+*Manhattan, 1919. One night, every light in the city went out. When they came back on, there was more than one Manhattan.*
+
+In a basement laboratory beneath the Lower East Side, Dr. Elias Crane tried to draw limitless energy from ether crystals. The experiment tore a rift between worlds: ferrymen see a second Brooklyn Bridge in the fog, clocks stop, people meet themselves on the street. Washington has quietly founded a division of the Bureau of Investigation that officially does not exist – and you lead it. Find the ten anchors before your world falls apart.
+
+## Trailer
+
+[![Watch the trailer](docs/screenshots/trailer-poster.jpg)](site/play2/intro.mp4)
+
+The 24-second trailer also plays as the intro when the game starts (Esc, Enter, Space or a click skips it). It was made from Higgsfield stills animated with Seedance 2.0 Mini, one short clip per scene, then cut together with text overlays and the game's own soundtrack.
+
 ![Singularity V2 – the interface](docs/screenshots/v2-screenshot.jpg)
 
 ## Screenshots
@@ -22,7 +36,7 @@ Singularity is a turn-based strategy game in the browser. You lead a secret divi
 
 | | Folder | Look |
 |---|---|---|
-| **V2** (current) | [`site/play2/`](site/play2/) | Painted isometric art in a dark, Fringe-like 1920s mood, art deco interface |
+| **V2** (current) | [`site/play2/`](site/play2/) | Painted isometric art in a dark, Fringe-like 1920s mood, art deco interface, intro trailer |
 | **Retro** (V1) | [`site/play/`](site/play/) | The original pixel-art version |
 
 Both are single-file HTML/JavaScript games drawn on a `<canvas>` – no build step, no framework. Each has a `mobile.html` variant with a phone layout (generated from `index.html`, see `tools/make_mobile*.sh`).
@@ -63,6 +77,7 @@ The site is static and runs in an `nginx:alpine` container behind Nginx Proxy Ma
 
 - **V2:** buildings, landmarks, vehicles, portraits, panel art and UI frames were generated with [Higgsfield](https://higgsfield.ai) (GPT Image 2.6) from one style concept (above). Every map sprite was generated with a second reference image for the camera angle and then checked for a straight 2:1 isometric view (`tools/measure_iso.py`). Streets are seamless painted textures projected onto the map grid (`tools/ground_v2.py`).
 - **Retro (V1):** sprites were generated with [PixelLab](https://pixellab.ai); the ground, park, bridge, water and logo are drawn by the Python scripts in `tools/`.
+- **Trailer:** story first, then one Higgsfield still per scene (GPT Image 2.6) animated with Seedance 2.0 Mini, assembled locally with AVFoundation.
 - All V2 images are served as WebP; the game pre-shades sprites once instead of using canvas filters, which keeps start-up at a few seconds.
 
 ## Repository layout

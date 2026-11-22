@@ -296,6 +296,12 @@ html.m .top>*{min-width:0}html.m .hud>*{max-width:100%;box-sizing:border-box}
 .acard.unknown{filter:none!important}
 
 /* loading screen */
+#intro{position:fixed;inset:0;z-index:300;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .5s}
+#intro.done{opacity:0;pointer-events:none}
+#intro video{width:100%;height:100%;object-fit:contain;background:#000}
+#introskip{position:absolute;right:28px;bottom:24px;font:15px 'Federo',serif;letter-spacing:3px;color:#e2c480;background:rgba(0,0,0,.55);border:1px solid rgba(226,196,128,.45);padding:8px 16px;opacity:0;animation:introIn .6s 1s forwards}
+#introsnd{position:absolute;left:28px;bottom:24px;font:14px 'Federo',serif;letter-spacing:2px;color:#e2c480;background:rgba(0,0,0,.55);border:1px solid rgba(226,196,128,.45);padding:8px 16px;cursor:pointer}
+@keyframes introIn{to{opacity:.9}}
 #loading{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,#1a2124,#07090a 70%);transition:opacity .6s}
 #loading.done{opacity:0;pointer-events:none}
 #loading .lbox{text-align:center;color:#d9b770;font-family:Federo,'Oswald',sans-serif}
@@ -307,6 +313,19 @@ html.m .top>*{min-width:0}html.m .hud>*{max-width:100%;box-sizing:border-box}
 </style>
 </head>
 <body>
+<div id="intro"><video id="introv" src="intro.mp4" playsinline preload="auto"></video><div id="introskip">ESC TO SKIP</div><button id="introsnd" hidden>&#128264; SOUND ON</button></div>
+<script>(()=>{ // intro trailer: plays on every start, Esc / Enter / Space / click / tap skips it
+ const o=document.getElementById('intro'),v=document.getElementById('introv'),snd=document.getElementById('introsnd'),sk=document.getElementById('introskip');
+ if(matchMedia('(pointer:coarse)').matches)sk.textContent='TAP TO SKIP';
+ window.INTRO_ON=true;
+ const key=e=>{if(e.key==='Escape'||e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();end()}};
+ function end(){if(!window.INTRO_ON)return;window.INTRO_ON=false;v.pause();o.classList.add('done');setTimeout(()=>o.remove(),600);document.removeEventListener('keydown',key,true);
+  if(window.__musicUnlock&&(!navigator.userActivation||navigator.userActivation.hasBeenActive))window.__musicUnlock()}
+ document.addEventListener('keydown',key,true);o.addEventListener('click',end);
+ snd.addEventListener('click',e=>{e.stopPropagation();v.muted=false;v.play().catch(()=>{});snd.hidden=true});
+ v.addEventListener('ended',end);v.addEventListener('error',end);
+ v.play().catch(()=>{v.muted=true;snd.hidden=false;v.play().catch(end)}); // browsers may block sound until the first click
+})()</script>
 <div id="loading"><div class="lbox"><img src="ui/logo.webp" alt="" width="200" height="111"><div class="ltitle">SINGULARITY</div><div class="lbarw"><i id="loadbar"></i></div><div class="lsub">Loading Manhattan… <span id="loadpct">0 %</span></div></div></div>
 <div class="top">
   <div class="title"><img src="ui/logo.webp" alt="" width="66" height="37" style="vertical-align:middle;margin:-6px 8px -6px 0">SINGULARITY</div>
@@ -477,8 +496,8 @@ const Music=(()=>{
  };
  document.getElementById('mus').onclick=()=>{st.on=!st.on;save();apply();if(st.on){unlocked=true;startAmb();resume()}else stopAll()};
  document.getElementById('vol').oninput=e=>{st.vol=+e.target.value;save();apply()};
- const unlock=()=>{if(unlocked)return;unlocked=true;startAmb();resume()};
- addEventListener('pointerdown',unlock,{once:true,capture:true});addEventListener('keydown',unlock,{once:true,capture:true});
+ const unlock=()=>{if(unlocked||window.INTRO_ON)return;unlocked=true;startAmb();resume()};window.__musicUnlock=unlock; /* waits while the intro trailer plays */
+ addEventListener('pointerdown',unlock,{capture:true});addEventListener('keydown',unlock,{capture:true});
  apply();return api})();
 </script>
 <script>

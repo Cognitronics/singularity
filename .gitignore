@@ -9,3 +9,6 @@ site/play2/art/*.png
 site/**/_*.html
 .DS_Store
 __pycache__/
+dist/
+singularity-itch.zip
+itch_media/
