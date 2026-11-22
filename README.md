@@ -32,23 +32,29 @@ The 24-second trailer also plays as the intro when the game starts (Esc, Enter, 
 | ![The Manhattan Ether](docs/screenshots/v2-newspaper.jpg) | ![The retro version](docs/screenshots/v1-retro.jpg) |
 | **The Manhattan Ether** – every turn starts with the news | **The retro version** – the original pixel-art prototype |
 
-## Two versions
+## Versions
 
-| | Folder | Look |
+| | Folder | What it is |
 |---|---|---|
-| **V2** (current) | [`site/play2/`](site/play2/) | Painted isometric art in a dark, Fringe-like 1920s mood, art deco interface, intro trailer |
+| **V4 Dev Edition** | [`site/play4/`](site/play4/) | Work in progress: 1–3 rival universes played by bots, great projects, the Parallel Universe View |
+| **V3** (current) | [`site/play3/`](site/play3/) | Combinable tech tree, endless mode, difficulty levels, online Hall of Fame, save & load |
+| **V2** | [`site/play2/`](site/play2/) | Painted isometric art in a dark 1920s noir mood, art deco interface, intro trailer |
 | **Retro** (V1) | [`site/play/`](site/play/) | The original pixel-art version |
 
-Both are single-file HTML/JavaScript games drawn on a `<canvas>` – no build step, no framework. Each has a `mobile.html` variant with a phone layout (generated from `index.html`, see `tools/make_mobile*.sh`).
+All are single-file HTML/JavaScript games drawn on a `<canvas>` – no framework. Each has a `mobile.html` variant with a phone layout.
+
+V4 is **generated** from V3: `tools/build_v4.sh` copies `site/play3/index.html` and applies the patch scripts `tools/v4_*.py` in order (rivals → view → Wardenclyffe → FBI → projects → HAARP → P.E.A.C.E.). Change V3 or a patch script, then rebuild – do not edit `site/play4/index.html` by hand.
 
 ## Gameplay in short
 
-- **48 turns, 6 epochs.** Hold **6 of the 10 anchors** at the end of an epoch to win.
+- **Epochal** (48 turns, 6 epochs) or **Endless** mode; Easy / Normal / Hard. Hold 4, 5 or 6 of the 10 anchors at the end of an epoch to win.
 - **Districts:** Financial District, Lower East Side, Greenwich Village, Hell's Kitchen & Docks, Times Square, Midtown, Central Park and Harlem – each with its own income, quirks and three build slots.
 - **Facilities:** coal and Tesla generators, laboratories, crystal drills, radio towers, stabilisers and portals.
 - **Resources:** money, power, ether crystals, psy and research.
 - **Instability:** if it reaches 100 %, your universe falls into the Singularity.
-- **Scientists:** Tesla, Curie, Einstein, Bohr, Meitner, Goddard, Noether and Hubble join the bureau in secret and reveal anchors. Their cards already carry espionage and sabotage values for a planned multiplayer mode.
+- **Tech tree (V3):** twelve principles combine at the bench into 32 secret inventions – facilities, modules, edicts and psy actions. See [`docs/design/tech-tree.md`](docs/design/tech-tree.md).
+- **Scientists:** Tesla, Curie, Einstein, Bohr, Meitner, Goddard, Noether and Hubble join the bureau in secret, reveal anchors and recipes – and in V4 go on spy and sabotage missions.
+- **Rival universes (V4):** full bot-played games racing you for the same anchors. Great projects by technological stage – Wardenclyffe Tower, Observatory, Portal, Federal Bureau of Investigation, Parallel Universe Pictureframe, HAARP (weather control and a stealth veil) and P.E.A.C.E., the Particle Ether Accelerator for Cosmic Erasure. An Observer gives cryptic hints.
 
 The full rules are in the in-game *Bureau Manual* (Help button).
 
@@ -59,7 +65,7 @@ The game needs to be served over HTTP (browsers block canvas pixel access on `fi
 ```bash
 cd site
 python3 -m http.server 8000
-# open http://localhost:8000/play2/
+# open http://localhost:8000/play3/  (or /play4/ for the Dev Edition)
 ```
 
 ## Deploy
@@ -70,6 +76,8 @@ The site is static and runs in an `nginx:alpine` container behind Nginx Proxy Ma
 2. Set the Nginx Proxy Manager network name in `docker-compose.yml` (`docker network ls`).
 3. `docker compose up -d`
 4. Point a DNS record at the server and add a proxy host in Nginx Proxy Manager (port 80, Let's Encrypt SSL).
+
+`docker-compose.yml` also starts **`singularity-scores`**, the online Hall of Fame: a small Python service (standard library + SQLite, [`scores/server.py`](scores/server.py)) behind `/api/scores`, routed by [`nginx.conf`](nginx.conf). It stores agent name, mode, difficulty, score and game stats – no IP addresses. The V4 Dev Edition does not submit scores.
 
 ## How the art was made
 
@@ -87,8 +95,12 @@ site/            the website (singularity.cognitronics.ai)
   index.html     landing page
   devlog.html    devlog, posts/ – the articles
   play/          retro version (V1, pixel art)
-  play2/         current version (V2)
-  play/music/    soundtrack (shared by both versions)
-tools/           Python/shell scripts used to build sprites, ground and mobile pages
+  play2/         V2
+  play3/         V3 (current)
+  play4/         V4 Dev Edition (built by tools/build_v4.sh)
+  play/music/    soundtrack (shared by all versions)
+scores/          Hall of Fame service (server.py)
+tools/           scripts for sprites, ground, mobile pages and the V3/V4 patches
+docs/design      game design notes (tech tree)
 docs/screenshots images for this README
 ```

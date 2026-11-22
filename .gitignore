@@ -12,3 +12,5 @@ __pycache__/
 dist/
 singularity-itch.zip
 itch_media/
+v3/
+scores/data/
